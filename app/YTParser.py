@@ -54,8 +54,8 @@ def get_links(description):
 def filter_links(links):
     return [link for link in links if not re.search("|".join(["("+f+")" for f in filters]),link)]
 
-def parse():
-    opened_file = open('input.csv', encoding="UTF-8")
+def parse(filename):
+    opened_file = open(filename, encoding="UTF-8")
     reader = csv.reader(opened_file)
 
     for row in reader: 
@@ -67,3 +67,26 @@ def parse():
             print(filtered_links)
         except:
             print(reader.line_num)
+
+def parse_test(filename):
+    opened_file = open(filename, encoding="UTF-8")
+    reader = csv.reader(opened_file)
+
+    ans = ""
+    for row in reader: 
+        ans += row
+    return ans
+
+# def parse():
+#     opened_file = open('input.csv', encoding="UTF-8")
+#     reader = csv.reader(opened_file)
+
+#     for row in reader: 
+#         try:
+#             channel_id = row[2]
+#             description = get_latest_video_description(channel_id)
+#             links = get_links(description)
+#             filtered_links = filter_links(links)
+#             print(filtered_links)
+#         except:
+#             print(reader.line_num)
