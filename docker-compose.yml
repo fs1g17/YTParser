@@ -21,7 +21,7 @@ services:
       - db
   db:
     # when connecting with pgadmin, connection address: host.docker.internal
-    container_name: YTParser_postgres
+    container_name: YTParser_postgres 
     image: postgres
     restart: always
     environment:
@@ -30,6 +30,6 @@ services:
       - "5432:5432"
       # for data persistence
     volumes:
-      - ytparser_pgdata:/var/lib/postgresql/data
+      - ytparser:/var/lib/postgresql/data
 volumes:
-  ytparser_pgdata:
+  ytparser:

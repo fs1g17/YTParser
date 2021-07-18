@@ -1,7 +1,9 @@
+import io
 import os
 import re
 import csv
 import pickle
+import psycopg2
 import googleapiclient.errors
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
@@ -67,6 +69,22 @@ def parse(filename):
             print(filtered_links)
         except:
             print(reader.line_num)
+
+def parse_save(contents,cursor,command):
+    bytes_io = io.BytesIO(contents)
+    opened_file = io.TextIOWrapper(bytes_io,encoding="UTF-8")
+    reader = csv.reader(opened_file)
+
+    ans = False
+    for row in reader: 
+        try:
+            channel_name = row[0]
+            channel_id = row[2]
+            ans = True
+            cursor.execute(command,(channel_name,channel_id))
+        except:
+            print("failed at: ", reader.line_num)
+    return ans
 
 def parse_test(filename):
     opened_file = open(filename, encoding="UTF-8")
