@@ -70,11 +70,24 @@ def get_latest_video_description(channel_id):
     return latest_video_description
 
 # command defines how to extract information
-def get_latest_video_description(cur,command):
-    cur.execute(command) 
-    rows = cur.fetchall()
+# def get_latest_video_description(cur,command):
+#     cur.execute(command) 
+#     rows = cur.fetchall()
+#     links = []
+#     for row in rows:
+#         try:
+#             channel_id = row[1]
+#             description = get_latest_video_description(channel_id)
+#             links = get_links(description)
+#             filtered_links = filter_links(links)
+#             links += filtered_links
+#         except:
+#             print(row[0])
+#     return links
+
+#asaync or not??
+def get_links_from_rows(rows):
     links = []
-    i = 0
     for row in rows:
         try:
             channel_id = row[1]
@@ -82,11 +95,6 @@ def get_latest_video_description(cur,command):
             links = get_links(description)
             filtered_links = filter_links(links)
             links += filtered_links
-            i += 1
-            print(i)
-
-            if i > 5:
-                return links
         except:
             print(row[0])
     return links

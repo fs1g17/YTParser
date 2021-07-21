@@ -1,5 +1,5 @@
 FROM python:3.7
-RUN pip install fastapi uvicorn requests psycopg2 python-multipart google-api-python-client google-auth-oauthlib google-auth-httplib2
+RUN pip install fastapi uvicorn SQLAlchemy sqlalchemy-utils requests alembic psycopg2 python-multipart google-api-python-client google-auth-oauthlib google-auth-httplib2
 EXPOSE 80 6969
 COPY ./app /app
 WORKDIR /app
