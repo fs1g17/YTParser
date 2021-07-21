@@ -46,6 +46,16 @@ def add_creator(db: Session = Depends(get_db), details: AddCreator = Body(...)):
         "success":True,
     }
 
+@app.post("/removeCreator")
+def del_creator(channel_name: str, db: Session = Depends(get_db)):
+    try:
+        db.execute("DELETE FROM creators WHERE channel_name = '%s'"%(channel_name))
+        db.commit()
+    except Exception as e:
+        return {"error":str(e)}
+
+    return {"success":True}
+
 @app.get("/getTop")
 def get_top(db: Session = Depends(get_db)):
     try:
@@ -79,25 +89,6 @@ async def save_file(file: UploadFile = File(...), db: Session = Depends(get_db))
         return {"BIG error":str(e)}
 
     return {"success":True}
-
-# @app.post("/saveInput")
-# async def save_file(file: UploadFile = File(...)):
-#     conn = psycopg2.connect(dbname=dbname,user="postgres", password="root", host="host.docker.internal")
-#     cursor = conn.cursor()
-
-#     try:
-#         command = "INSERT INTO " + tbname + " VALUES (%s,%s);"
-#         contents = await file.read()
-#         finished = await parse_save(contents,cursor,command)
-#     except:
-#         finished = False
-#     finally:
-#         conn.commit()
-#         cursor.close()
-#         conn.close()
-
-#     return {"finished":finished}
-
 
 @app.post("/apiTest")
 def api_test():
