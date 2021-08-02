@@ -22,7 +22,20 @@ def upgrade():
         sa.Column('channel_name', postgresql.TEXT, primary_key=True),
         sa.Column('channel_id', postgresql.TEXT)
     )
+    op.create_table(
+        'videos',
+        sa.Column('channel_id', postgresql.TEXT, primary_key=True),
+        sa.Column('video_id', postgresql.TEXT, primary_key=True),
+        sa.Column('video_info',postgresql.TEXT)
+    )
+    op.create_table(
+        'keywords',
+        sa.Column('video_info', postgresql.TEXT, primary_key=True),
+        sa.Column('keyword', postgresql.TEXT, primary_key=True)
+    )
 
 
 def downgrade():
     op.drop_table('creators')
+    op.drop_table('videos')
+    op.drop_table('keywords')

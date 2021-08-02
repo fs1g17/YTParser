@@ -9,6 +9,7 @@ import requests
 import shutil
 from schemas import AddCreator
 from sqlalchemy.orm import Session
+from sqlalchemy import select 
 from database import get_db
 from YTParser import *
 from models import Creator
@@ -24,6 +25,57 @@ alembicArgs = [
     'upgrade', 'head'
 ]
 alembic.config.main(argv=alembicArgs)
+
+@app.post("/deleteVideoByNumber")
+def del_by_num(start:int, end:int, db: Session = Depends(get_db)):
+    exceptions = []
+    try:
+        results = db.execute("SELECT * FROM creators;")
+        for i,row in enumerate(results):
+            if i < start:
+                continue
+            if i > end:
+                db.commit()
+                return {"finished":True}
+            try:
+                channel_name = row[0]
+                channel_id = row[1]
+                db.execute("DELETE FROM videos WHERE channel_id='%s';"%channel_id)
+            except Exception as exception:
+                exceptions.append(str((channel_name,exception)))
+    except Exception as e:
+        return {"error":str(e)}
+
+@app.post("/cacheVideosByNumber")
+def cache_onwards_number(start:int, end:int, db: Session = Depends(get_db)):
+    exceptions = []
+    try:
+        results = db.execute("SELECT * FROM creators;")
+        for i,row in enumerate(results):
+            if i < start:
+                continue 
+
+            if i > end: 
+                return {"finished":"True","exceptions":exceptions}
+
+            try:
+                channel_name = row[0]
+                cache_to_db(db,channel_name)
+                db.commit()
+            except Exception as exception:
+                exceptions.append(str((channel_name,exception)))
+    except Exception as e:
+        exceptions.append(str(("general exception", e)))
+    
+    return {"errors":exceptions}
+
+@app.get("/getCreators")
+def get_creators(db: Session = Depends(get_db)):
+    try:
+        results = db.execute("SELECT channel_name FROM creators;")
+        return {"creators":results}
+    except Exception as e:
+        return {"error":str(e)}
 
 @app.post("/addCreator")
 def add_creator(db: Session = Depends(get_db), details: AddCreator = Body(...)):
@@ -57,10 +109,10 @@ def del_creator(channel_name: str, db: Session = Depends(get_db)):
     return {"success":True}
 
 @app.get("/getTop")
-def get_top(db: Session = Depends(get_db)):
+def get_top(table:str, limit: int, db: Session = Depends(get_db)):
     try:
         rows = []
-        results = db.execute("SELECT * FROM creators")
+        results = db.execute("SELECT * FROM " + table + " LIMIT " + str(limit))
         for row in results:
             rows.append(row)
         return {"rows":rows}
@@ -90,20 +142,13 @@ async def save_file(file: UploadFile = File(...), db: Session = Depends(get_db))
 
     return {"success":True}
 
-@app.post("/apiTest")
-def api_test():
-    print("testing api")
-    channel_id = "UC-lHJZR3Gqxm24_Vd_AJ5Yw"
-    description = get_latest_video_description(channel_id)
-    return {"description":description}
-
 @app.post("/getAuthLink")
 async def auth():
     if os.path.exists("CREDENTIALS_PICKLE_FILE"):
         return {"finished":"User already verified!"}
     
     url,flow = get_auth_service_link()
-    return {"URL":url}
+    return {"URL":url[0]}
 
 #TODO: figure out how to save stuff in python docker container locally!! (using volumes I guess)
 @app.get("/setCode")
@@ -116,3 +161,77 @@ def set_code(code):
     except:
         return {"finished":False}
     return {"finished":True}
+
+#-----------------LEGACY--------------------------
+# @app.post("/cacheDB")
+# def cache_2_db(channel_name: str, db: Session = Depends(get_db)):
+#     try:
+#         cache_to_db(db,channel_name)
+#         db.commit()
+#     except Exception as e:
+#         return {"error":str(e)}
+#     return {"success":True}
+
+# @app.post("/deleteVideosByChannelId")
+# def delete_videos_by_channel_id(channel_id: str, db: Session = Depends(get_db)):
+#     try:
+#         db.execute("DELETE FROM videos WHERE channel_id='%s';"%channel_id)
+#         db.commit()
+#     except Exception as e:
+#         return {"error":str(e)}
+#     return {"success":True}
+
+# # select from which creator to cache onwards
+# @app.post("/cacheVideosOnwards")
+# def cache_onwards(channel_name:str, db: Session = Depends(get_db)):
+#     exceptions = []
+#     try:
+#         results = db.execute("SELECT * FROM creators;")
+#         condition = False 
+#         for row in results:
+#             try:
+#                 ch_name = row[0]
+#                 if condition or ch_name == channel_name:
+#                     condition = True
+#                     cache_to_db(db,channel_name)
+#                     db.commit()
+#             except Exception as exception:
+#                 exceptions.append(str((ch_name,exception)))
+        
+#     except Exception as e:
+#         exceptions.append(str(("general exception",e)))
+    
+#     return {"finished":True,"errors":exceptions}
+#
+
+# @app.post("/cacheVideos")
+# def cache_videos(db: Session = Depends(get_db)):
+#     print("COMMENCING CACHING")
+#     exceptions = []
+#     bloggers = []
+#     try:
+#         results = db.execute("SELECT * FROM creators;")
+
+#         for row in results:
+#             try:
+#                 channel_name = row[0]
+#                 print(channel_name)
+#                 bloggers.append(channel_name)
+#                 cache_to_db(db,channel_name)
+#                 db.commit()
+#             except Exception as exception:
+#                 exceptions.append(str((channel_name,exception)))
+        
+#     except Exception as e:
+#         exceptions.append(str(("general exception",e)))
+    
+#     return {"finished":True,"errors":exceptions}
+
+# @app.post("/clearVideos")
+# def clear_videos(db: Session = Depends(get_db)):
+#     try:
+#         db.execute("DELETE FROM videos;")
+#         db.commit()
+#     except Exception as e:
+#         return {"error":str(e)}
+#     return {"finished":True}
