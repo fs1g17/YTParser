@@ -319,6 +319,25 @@ def cache_to_db(db,channel_name):
         db.add(to_add)
     return True
 
+# to parse video_info as a dict, we need to replace \' with \" and vice versa
+def clean_description(video_info: str):
+    output = ""
+    for letter in video_info:
+        if letter == '\'':
+            output += '\"'
+            continue
+
+        if letter == '\"':
+            output += '\''
+            continue
+
+        output += letter 
+
+    output = output.replace("\\n","")
+    output = output.replace("\n","")
+    return output
+
+
 #--------------------------- GUI functions -----------------------------
 def get_video_id_from_video_url(video_url: str):
     info = video_url.split("youtube.com/watch?v=")

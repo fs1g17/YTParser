@@ -1,3 +1,4 @@
+import ast
 from typing import Optional
 from webbrowser import get
 from fastapi import FastAPI, File, UploadFile, Request, Depends
@@ -7,11 +8,16 @@ import psycopg2
 from pyasn1.type.univ import Null
 import requests
 import shutil
+import json
+
+from sqlalchemy.sql.expression import desc
 from schemas import AddCreator
 from sqlalchemy.orm import Session
 from sqlalchemy import select 
 from database import get_db
-from YTParser import *
+from YTHandler import *
+from DBHandler import *
+from authentication import *
 from models import Creator
 from database import validate_database
 dbname = "youtube"
@@ -25,6 +31,124 @@ alembicArgs = [
     'upgrade', 'head'
 ]
 alembic.config.main(argv=alembicArgs)
+
+keywords = ["bridgestone",
+            "michelin",
+            "continental",
+            "nokian",
+            "kumho",
+            "goodyear",
+            "hankook",
+            "pirelli",
+            "yokohama",
+            "dunlop",
+            "marshal crugen",
+            "tigar",
+            "formula",
+            "viatti",
+            "kormoran",
+            "semperit",
+            "toyo",
+            "tunga",
+            "matador",
+            "nexen",
+            "cordiant",
+            "nitto",
+            "msxxis",
+            "laufen",
+            "debica",
+            "kama",
+            "nankang",
+            "tristar",
+            "cst",
+            "contyre",
+            "roadstone",
+            "cooper",
+            "bfgoodrich",
+            "general tire",
+            "gislaved",
+            "triangle"]
+
+# Sponsor - Channel name - Date - Views - Link 
+
+@app.post("/search/allKeywords")
+def search_all_keywords(db: Session = Depends(get_db)):
+    output = []
+    answer = []
+    i = 0
+    try:
+        results = db.execute("SELECT * FROM videos")
+
+        for row in results:
+            video_info = ast.literal_eval(row[2])
+            description = video_info['description']
+            description = description.lower()
+
+            for keyword in keywords:
+                if keyword in description:
+                    channel_id = row[0]
+                    video_id = row[1]
+                    date = video_info['date']
+                    views = video_info['views']
+                    link = "youtube.com/watch?v=" + video_id
+                    line = [keyword,channel_id,date,views,link] 
+
+                    output.append(line)
+
+        for line in output:
+            channel_id = line[1]
+            channel_name = ""
+            result = db.execute("SELECT * FROM creators WHERE channel_id='%s'"%channel_id)
+            
+            for row in result:
+                channel_name = row[0]
+
+            ans = line 
+            ans[1] = channel_name
+            answer.append(ans)
+                
+    except Exception as e:
+        return {"error":str(e),"output":output}
+    
+    return {"finished":True,"answer":answer}
+
+@app.get("/update")
+def update(db: Session = Depends(get_db)):
+    pass
+
+@app.post("/search/creatorKeyword")
+def search_creator_keyword(creator: str, keyword:str, db: Session = Depends(get_db)):
+    matches = []
+    return matches
+
+
+@app.post("/search/keyword")
+def search_keyword(keyword:str, db: Session = Depends(get_db)):
+    matches = []
+    try:
+        results = db.execute("SELECT * FROM videos")
+
+        for row in results:
+            video_info = ast.literal_eval(row[2])
+            description = video_info['description']
+
+            if keyword in description:
+                matches.append(row)
+
+            if len(matches) > 10:
+                return matches
+    except Exception as e:
+        return {"error":str(e),"video_info":row[2]}
+
+    return {"matches":matches}
+
+@app.post("/sizeOfTable")
+def get_size_of_table(table: str, db: Session = Depends(get_db)):
+    try:
+        return {"size of " + table : str(db.execute("SELECT * FROM " + table).rowcount)}
+    except Exception as e:
+        return {"error":str(e)}
+
 
 @app.post("/deleteVideoByNumber")
 def del_by_num(start:int, end:int, db: Session = Depends(get_db)):
@@ -51,7 +175,14 @@ def cache_onwards_number(start:int, end:int, db: Session = Depends(get_db)):
     exceptions = []
     try:
         results = db.execute("SELECT * FROM creators;")
+        num = results.rowcount
+
+        if end > num:
+            return {"outside of range"}
+        
+
         for i,row in enumerate(results):
+
             if i < start:
                 continue 
 
