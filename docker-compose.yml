@@ -9,17 +9,17 @@ services:
       - "6969:6969"
     environment: 
       - PYTHONPATH=/workspace
-  pgadmin:
-    container_name: YTParser_pgadmin
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "5050:80"
-    # depends_on: 
-    #   - db
+  # pgadmin:
+  #   container_name: YTParser_pgadmin
+  #   image: dpage/pgadmin4
+  #   restart: always
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: admin@admin.com
+  #     PGADMIN_DEFAULT_PASSWORD: root
+  #   ports:
+  #     - "5050:80"
+  #   # depends_on: 
+  #   #   - db
   db:
     # when connecting with pgadmin, connection address: host.docker.internal
     container_name: YTParser_postgres 

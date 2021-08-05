@@ -9,7 +9,6 @@ client_secrets_file = "client_secrets.json"
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 filters = ['vk','music','instagram','tiktok']
 
-# TODO: in the future, could get the link to return to webpage, then wait for user to paste in the code. 
 def get_auth_service():
     print("Getting service")
     if os.path.exists("CREDENTIALS_PICKLE_FILE"):

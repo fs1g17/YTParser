@@ -1,6 +1,5 @@
 import ast
 from typing import Optional
-from webbrowser import get
 from fastapi import FastAPI, File, UploadFile, Request, Depends
 from fastapi.param_functions import Body 
 from google.oauth2 import credentials
@@ -9,6 +8,7 @@ from pyasn1.type.univ import Null
 import requests
 import shutil
 import json
+from datetime import datetime
 
 from sqlalchemy.sql.expression import desc
 from schemas import AddCreator
@@ -114,13 +114,17 @@ def search_all_keywords(db: Session = Depends(get_db)):
 
 @app.get("/update")
 def update(db: Session = Depends(get_db)):
-    pass
+    try:
+        messages = update_db(db)
+        db.commit()
+        return {"messages":messages}
+    except Exception as e:
+        return {"error":str(e)}
 
 @app.post("/search/creatorKeyword")
 def search_creator_keyword(creator: str, keyword:str, db: Session = Depends(get_db)):
     matches = []
     return matches
-
 
 @app.post("/search/keyword")
 def search_keyword(keyword:str, db: Session = Depends(get_db)):
