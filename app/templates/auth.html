@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Unsplash Finder{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block page_content %}
+
+<h1>Authorisation</h1>
+
+<form>
+    <div class="form-group row">
+      <label for="inputEmail3" class="col-sm-2 col-form-label">Follow the link:</label>
+      <div class="col-sm-10">
+        <input type="text" readonly class="form-control-plaintext" id="authLinkBox" value={{link}}>
+      </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-11">
+            <input class="form-control" id="authCodeBox" placeholder="Paste Code in Here!">
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-primary" id="ok">OK</button>
+        </div>
+    </div>
+</form>
+
+<!-- add this to button 'onclick="submitFunction()"' -->
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+<script>
+    function submitFunction(){
+        base_url = window.location.href;
+        new_url = base_url + "/code?code=" + getCode();
+        window.location.replace(new_url);
+    }
+
+    document.getElementById("ok").onclick = submitFunction;
+</script>
+
+<script>
+    function getCode(){
+        return document.getElementById("authCodeBox").value
+    }
+</script>
+
+{% endblock %}

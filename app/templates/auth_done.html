@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Unsplash Finder{% endblock %}
+
+{% block head %}
+{{ super() }}
+
+<link rel="stylesheet" href="{{ url_for('static', path='/css/mystyle.css') }}">
+{% endblock %}
+
+{% block page_content %}
+
+<h1>Authorisation Complete!</h1>
+
+<div class="form-group">
+    <label for="authLinkBox">Authorisation link</label>
+    <div>
+        <input type="text" readonly class="form-control-plaintext" id="authLinkBox" value={{code}}>
+    </div>
+    <small id="authLinkBoxHelp" class="form-text text-muted">Please follow above link to get authorised!</small>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+
+{% endblock %}
