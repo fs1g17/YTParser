@@ -24,7 +24,8 @@ target_metadata = None
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-from database import validate_database
+#from database import validate_database
+from db.database import validate_database
 validate_database()
 
 def run_migrations_offline():

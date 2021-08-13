@@ -1,7 +1,7 @@
 from typing import List
 
 from sqlalchemy.orm.session import Session
-from authentication import *
+from .authentication import *
 import re
 from datetime import datetime 
 import ast 

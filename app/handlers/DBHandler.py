@@ -1,7 +1,9 @@
-from authentication import *
-from YTHandler import *
+from .authentication import *
+from .YTHandler import *
 from datetime import date, datetime
-from models import *
+#from app.db.models import Creator, Video, Keyword
+from db.models import Creator, Video, Keyword
+#from app.db.models import *
 import ast
 from sqlalchemy.orm.session import Session
 

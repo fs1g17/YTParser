@@ -11,15 +11,16 @@ import json
 from datetime import datetime
 
 from sqlalchemy.sql.expression import desc
-from schemas import AddCreator
+from db.schemas import AddCreator
 from sqlalchemy.orm import Session
 from sqlalchemy import select 
-from database import get_db
-from YTHandler import *
-from DBHandler import *
-from authentication import *
-from models import Creator
-from database import validate_database
+from db.database import get_db
+from db.models import Creator
+from db.database import validate_database
+from handlers.YTHandler import *
+from handlers.DBHandler import *
+from handlers.authentication import *
+
 dbname = "youtube"
 tbname = "creators"
 
