@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Unsplash Finder{% endblock %}
+
+{% block head %}
+{{ super() }}
+
+<link rel="stylesheet" href="{{ url_for('static', path='/css/mystyle.css') }}">
+{% endblock %}
+
+{% block page_content %}
+
+<h1>Viewing Creators</h1>
+<p>Here you can view and manage the creators in the database.</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">YouTube Channel</th>
+            <th scope="col">Channel ID</th>
+        </tr>
+    </thead>
+    <tbody id="tablecontents">
+        {% for name,id in ytbrs %}
+            <tr>
+                <td scope="col">{{ name }}</td>
+                <td scope="col">{{ id }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form>
+    <div class="form-group row">
+        <div class="col-2">
+            <button type="button" class="btn btn-primary" id="prev">back</button>
+        </div>
+        <div class="col-10">
+            
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-primary" id="ok">next</button>
+        </div>
+    </div>
+</form>
+
+<h2>{{message}}</h2>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+
+<!-- <script type="text/javascript">
+    var ytbrs = new Array();
+    ytbrs.push(["Poop","id_poop"]);
+    ytbrs.push(["Scoop","id_scoop"]);
+    ytbrs.push(["Droop","id_droop"]);
+
+    var tablecontents = "";
+    for(var i=0; i<ytbrs.length; i++){
+        tablecontents += "<tr>";
+        for(var j=0; j<ytbrs[i].length; j++){
+            tablecontents += "<td>" + ytbrs[i][j] + "</td>";
+        }
+        tablecontents += "</tr>";
+    }
+    document.getElementById("tablecontents").innerHTML += tablecontents;
+</script> -->
+
+
+{% endblock %}

@@ -3,10 +3,12 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from routers import auth 
+from routers import creators
 from handlers.gui import *
 
 app = FastAPI()
 app.include_router(auth.router)
+app.include_router(creators.router)
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")

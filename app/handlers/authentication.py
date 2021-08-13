@@ -36,3 +36,6 @@ def get_credentials(flow,code):
     flow.fetch_token(code=code)
     credentials = flow.credentials
     return credentials 
+
+def verify_cached_credentials():
+    return True
