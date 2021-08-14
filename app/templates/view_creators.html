@@ -10,38 +10,91 @@
 
 {% block page_content %}
 
-<h1>Viewing Creators</h1>
+<h3>View YouTubers</h3>
 <p>Here you can view and manage the creators in the database.</p>
 
-<table class="table">
-    <thead>
-        <tr class="tableRowWidth">
-            <th scope="col">YouTube Channel</th>
-            <th scope="col">Channel ID</th>
-        </tr>
-    </thead>
-    <tbody id="tablecontents">
-        {% for name,id in ytbrs %}
-            <tr class="tableRowWidth">
-                <td scope="col">{{ name }}</td>
-                <td scope="col">{{ id }}</td>
+<div class="container-fluid">
+    <table class="table">
+        <thead class="tableRowWidth">
+            <tr>
+                <th scope="col">YouTube Channel</th>
+                <th scope="col">Channel ID</th>
             </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<form>
-    <div class="form-group row">
-        <div class="col-6">
-            <button type="button" class="btn btn-primary" id="prev" onclick="backFunction({{page}})">back</button>
+        </thead>
+        <tbody id="tablecontents" class="tableRowWidth">
+            {% for name,id in ytbrs %}
+                <tr>
+                    <td scope="col">{{ name }}</td>
+                    <td scope="col">{{ id }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <form>
+        <div class="form-group row">
+            <div class="col-6">
+                <button type="button" class="btn btn-primary" id="prev" onclick="backFunction({{page}})">back</button>
+            </div>
+            <div class="col-6">
+                <button type="button" class="btn btn-primary float-right" id="next" onclick="nextFunction({{page}},{{num_creators}})">next</button>
+            </div>
         </div>
-        <div class="col-6">
-            <button type="button" class="btn btn-primary float-right" id="next" onclick="nextFunction({{page}},{{num_creators}})">next</button>
-        </div>
-    </div>
-</form>
+    </form>
 
-<h2>{{message}}</h2>
+
+    <h3>Add a YouTuber</h3>
+    <p>Add a YouTube content creator to the program:</p>
+    <form>
+        <div class="form-group row">
+            <div class="col-7">
+                <input class="form-control" id="channelName" placeholder="YouTuber name">
+            </div>
+            <div class="col-3">
+                <input class="form-control" id="channelID" placeholder="Channel ID">
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-primary" id="add">ADD</button>
+            </div>
+            <div class="col-1">
+                <button type="button" class="btn btn-light rounded-circle" data-toggle="modal" data-target="#exampleModal"> 
+                    ?
+                </button>
+
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Adding a YouTuber to the Database</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                        <div class="modal-body">
+                            <div>YouTuber name is just so you can recognise the YouTuber, so call it whatever you want!</div>
+                            <div>Channel ID is required for the application to make correct YouTube API calls. To get the channel id, do the following:</div>
+
+                            <ul>
+                                <li>Go to the desired YouTube channel in your browser.</li>
+                                <li>Click on any video.</li>
+                                <li>Just above the video description, you can click on the YouTuber's thumbnail, this should take you back to the channel page.</li>
+                                <li>Now the URL should look something like this: youtube.com/channel/UCpbH_7H71IPKq4eH7CD5spg</li>
+                                <li>Everything after the last slash, in this case UCpbH_7H71IPKq4eH7CD5spg, is the channel id.</li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<p>{{message}}</p>
 
 {% endblock %}
 
@@ -57,23 +110,43 @@
         new_page = page + 1;
 
         if(curr_max < num_creators){
-            base_url = window.location.href;
-            if(base_url.includes("page=")){
-                new_url = base_url.replace("page="+page,"page="+new_page);
-            } else {
-                new_url = base_url + "?page=" + new_page;
-            }
-            window.location.replace(new_url);
+            goToPage(new_page);
         } 
     }
     
     function backFunction(page){
         new_page = page - 1;
         if(page > 0){
-            base_url = window.location.href;
-            new_url = base_url.replace("page="+page,"page="+new_page);
-            window.location.replace(new_url);
+            goToPage(new_page);
         }
     }
+
+    function goToPage(page){
+        base_url = window.location.origin;
+        new_url = base_url + "/viewCreators?page=" + page;
+        window.location.replace(new_url);
+    }
+
+    function addFunction(){
+        channel_name = getName();
+        channel_id = getID();
+
+        if(channel_name.length > 0 && channel_id.length > 0){
+            window.location.replace("/addCreator?ch_name=" + channel_name + "&ch_id=" + channel_id)
+        } else {
+            window.location.replace("/viewCreators?message=Name+and+ID+can+not+be+empty")
+        }
+    }
+
+
+    function getName(){
+        return document.getElementById("channelName").value;
+    }
+
+    function getID(){
+        return document.getElementById("channelID").value;
+    }
+
+    document.getElementById("add").onclick = addFunction;
 </script>
 {% endblock %}

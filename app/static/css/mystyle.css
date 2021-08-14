@@ -28,6 +28,10 @@ footer {
     margin-right: auto;
 }
 
+#creatorsTableUI{
+    background-color: lightslategray;
+}
+
 #divElement{
     position: absolute;
     top: 50%;

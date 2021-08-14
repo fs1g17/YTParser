@@ -2,6 +2,7 @@ import os.path
 import markdown
 
 
+
 def openfile(filename):
     filepath = os.path.join("/pages/", filename)
     with open(filepath, "r", encoding="utf-8") as input_file:

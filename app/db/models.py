@@ -2,7 +2,7 @@ import sqlalchemy
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.sql.schema import Column
 from sqlalchemy.ext.declarative import declarative_base
-from database import Base 
+from .database import Base 
 
 #Base = declarative_base()
 
