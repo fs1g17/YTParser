@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Unsplash Finder{% endblock %}
+{% block title %}YTParser{% endblock %}
 
 {% block head %}
 {{ super() }}
@@ -15,14 +15,14 @@
 
 <table class="table">
     <thead>
-        <tr>
+        <tr class="tableRowWidth">
             <th scope="col">YouTube Channel</th>
             <th scope="col">Channel ID</th>
         </tr>
     </thead>
     <tbody id="tablecontents">
         {% for name,id in ytbrs %}
-            <tr>
+            <tr class="tableRowWidth">
                 <td scope="col">{{ name }}</td>
                 <td scope="col">{{ id }}</td>
             </tr>
@@ -32,14 +32,11 @@
 
 <form>
     <div class="form-group row">
-        <div class="col-2">
-            <button type="button" class="btn btn-primary" id="prev">back</button>
+        <div class="col-6">
+            <button type="button" class="btn btn-primary" id="prev" onclick="backFunction({{page}})">back</button>
         </div>
-        <div class="col-10">
-            
-        </div>
-        <div class="col-2">
-            <button type="button" class="btn btn-primary" id="ok">next</button>
+        <div class="col-6">
+            <button type="button" class="btn btn-primary float-right" id="next" onclick="nextFunction({{page}},{{num_creators}})">next</button>
         </div>
     </div>
 </form>
@@ -51,22 +48,32 @@
 {% block scripts %}
 {{ super() }}
 
-<!-- <script type="text/javascript">
-    var ytbrs = new Array();
-    ytbrs.push(["Poop","id_poop"]);
-    ytbrs.push(["Scoop","id_scoop"]);
-    ytbrs.push(["Droop","id_droop"]);
 
-    var tablecontents = "";
-    for(var i=0; i<ytbrs.length; i++){
-        tablecontents += "<tr>";
-        for(var j=0; j<ytbrs[i].length; j++){
-            tablecontents += "<td>" + ytbrs[i][j] + "</td>";
-        }
-        tablecontents += "</tr>";
+
+<script type="text/javascript">
+    function nextFunction(page,num_creators){
+        start = (page)*10 + 1;
+        curr_max = start + 9;
+        new_page = page + 1;
+
+        if(curr_max < num_creators){
+            base_url = window.location.href;
+            if(base_url.includes("page=")){
+                new_url = base_url.replace("page="+page,"page="+new_page);
+            } else {
+                new_url = base_url + "?page=" + new_page;
+            }
+            window.location.replace(new_url);
+        } 
     }
-    document.getElementById("tablecontents").innerHTML += tablecontents;
-</script> -->
-
-
+    
+    function backFunction(page){
+        new_page = page - 1;
+        if(page > 0){
+            base_url = window.location.href;
+            new_url = base_url.replace("page="+page,"page="+new_page);
+            window.location.replace(new_url);
+        }
+    }
+</script>
 {% endblock %}

@@ -17,6 +17,10 @@ footer {
     padding-top:50px;
 }
 
+.tableRowWidth{
+    width: 50%;
+}
+
 .responsive{
     max-width: 100%;
     height: auto;
