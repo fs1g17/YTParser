@@ -2,6 +2,7 @@ import os
 
 from starlette.responses import RedirectResponse
 from handlers.authentication import verify_cached_credentials
+from handlers.YTHandler import verify_channel
 
 # Database imports
 from db.models import Creator
@@ -20,7 +21,7 @@ from fastapi import Request, APIRouter, Depends
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
-error_messages = ["Creator already in the database"]
+error_messages = ["Creator already in the database","YouTube can not find given channel","Please authenticate yourself first"]
 
 @router.get("/viewCreators", response_class=HTMLResponse)
 async def view_creators(request: Request, db: Session = Depends(get_db), page: int = 0, message: str = ""):
@@ -44,7 +45,17 @@ async def view_creators(request: Request, db: Session = Depends(get_db), page: i
 
 
 @router.get("/addCreator", response_class=RedirectResponse)
-def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depends(get_db), page: int = 0):    
+def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depends(get_db), page: int = 0):   
+    channel_status = verify_channel(ch_id)
+
+    if(channel_status == -1):
+        message = error_messages[2]
+    if(channel_status == 0):
+        message = error_messages[1]
+    
+    if(channel_status < 1):
+        return "/viewCreators?message=" + message
+
     try:
         if(len(ch_name) > 0 and len(ch_id) > 0):
             to_create = Creator (
@@ -70,7 +81,7 @@ def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depend
     return "/viewCreators?message=" + message + page_url_attribute
         
 #TODO: automatically navigate to the page with the newly added creator??
-#TODO: regex the youtube channel_id to make sure that it actually works!
+#TODO: regex the youtube channel_id to make sure that it actually works! <-- can't regex, maybe check with API?
 #TODO: inside all the YouTube API handle functions, ensure that the channel_id actually works!
 # query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN 10 AND 20;" <---- this works!!!!
 #query2 = "SELECT * FROM (SELECT row_number() over(), * FROM creators) LIMIT 10"

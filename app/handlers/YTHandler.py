@@ -95,6 +95,21 @@ def filter_links(links):
     return [link for link in links if not re.search("|".join(["("+f+")" for f in filters]),link)]
 
 #----------------------- CHANNEL FUNCTIONS ----------------------------------------
+#--------- RETURNS -1 if user isn't authenticated, 0 if channel doesn't exist, and 1 if it does
+def verify_channel(channel_id):
+    if(is_auth()):
+        youtube = get_auth_service()
+        response = youtube.channels().list(
+            part="snippet",
+            id=channel_id
+        ).execute()
+
+        page_info = response["pageInfo"]
+        total_results = page_info["totalResults"]
+
+        return total_results
+    return -1
+
 def get_uploads(channel_id,youtube):
     response = youtube.channels().list(
         part="snippet,contentDetails",
