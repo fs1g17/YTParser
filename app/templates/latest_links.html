@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}YTParser{% endblock %}
+
+{% block head %}
+{{ super() }}
+{% endblock %}
+
+{% block page_content %}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-auto">
+            <h1>Latest Links</h1>
+        </div>
+        <div class="col-auto">
+            <div class="spinner-border" role="status" id='spinner'>
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- <form action="" onsubmit="sendMessage(event)">
+    <input type="text" id="messageText" autocomplete="off"/>
+    
+</form> -->
+<ul id="messages">
+</ul>
+
+<div class="container-fluid">
+    <table class="table">
+        <thead class="tableRowWidth">
+            <tr>
+                <th scope="col">YouTube Channel</th>
+                <th scope="col">Latest Video Links</th>
+            </tr>
+        </thead>
+        <tbody id="tablecontents" class="tableRowWidth">
+        </tbody>
+    </table>
+
+    <form>
+        <div class="form-group row">
+            <div class="col-6">
+                <button type="button" class="btn btn-primary" id="prev" onclick="">back</button>
+            </div>
+            <div class="col-6">
+                <button type="button" class="btn btn-primary float-right" id="next" onclick="">next</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    function connect() {
+        return new Promise(function(resolve,reject) {
+            var ws = new WebSocket("ws://localhost:80/latestLinks/ws");
+            ws.onopen = function() {
+                resolve(ws);
+            };
+            ws.onerror = function(err){
+                reject(err);
+            };
+        });
+    }
+
+    async function procesing() {
+        try{
+            let ws = await connect();
+            console.log("connected!");
+
+            await ws.send("ready!");
+            console.log("ready");
+
+            var table_body = document.getElementById("tablecontents");
+
+            document.getElementById('prev').onclick = await function() {
+                ws.send("prev");
+                table_body.textContent = '';
+            }
+
+            document.getElementById('next').onclick = await function() {
+                ws.send("next");
+                table_body.textContent = '';
+            }
+
+            ws.onmessage = function(event){
+                var spinner = document.getElementById("spinner").style.visibility = "hidden";
+                console.log("got message");
+                console.log("info: " + event.data);
+
+                input_string = event.data;
+                input_string = input_string.replaceAll('\'',"\"");
+                creators_links = JSON.parse(input_string);
+                console.log("JSON: ", creators_links);
+
+                keys = Object.keys(creators_links);
+                for(i=0; i<keys.length; i++){
+                    key = keys[i];
+                    value = creators_links[key];
+
+                    var new_row = table_body.insertRow();
+                    var cell_name = new_row.insertCell();
+                    var cell_links = new_row.insertCell();
+
+                    
+                    var cell_name_value = document.createTextNode(key);
+                    var cell_links_value = document.createTextNode(value);
+
+                    cell_name.appendChild(cell_name_value);
+                    cell_links.appendChild(cell_links_value);
+                    
+                    
+                    // for(j=0; j<value.length; j++){
+                    //     var new_row = table_body.insertRow();
+                    //     var cell_name = new_row.insertCell();
+                    //     var cell_links = new_row.insertCell();
+
+                    //     if(j==0){
+                    //         var cell_name_value = document.createTextNode(key);
+                    //     } else {
+                    //         var cell_name_value = document.createTextNode(" ");
+                    //     }
+                    //     var cell_links_value = document.createTextNode(value[j]);
+
+                    //     cell_name.appendChild(cell_name_value);
+                    //     cell_links.appendChild(cell_links_value);
+                    // }
+                }
+            }
+
+        } catch(error){
+            console.log("ERROR: " + error);
+        }
+    }
+
+    procesing();
+
+</script>
+
+{% endblock %}

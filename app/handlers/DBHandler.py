@@ -1,11 +1,22 @@
+from sqlalchemy.orm import query
 from .authentication import *
 from .YTHandler import *
 from datetime import date, datetime
-#from app.db.models import Creator, Video, Keyword
-from db.models import Creator, Video, Keyword
-#from app.db.models import *
+#from db.models import Creator, Video, Keyword
+from db.database import Creator, Video
 import ast
 from sqlalchemy.orm.session import Session
+
+def get_creators(db: Session,limit:int=0):
+    query = "SELECT * FROM creators"
+    if limit > 0:
+        query += " LIMIT %s"%limit
+
+    results = db.execute(query)
+    creators = []
+    for row in results:
+        creators.append([row[0],row[1]])
+    return creators
 
 def cache_to_db(db,channel_name):
     results = db.execute("SELECT * FROM creators WHERE channel_name='" + channel_name + "';")

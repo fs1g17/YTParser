@@ -10,7 +10,7 @@ services:
     environment: 
       - PYTHONPATH=/workspace
   db:
-    # when connecting with pgadmin, connection address: host.docker.internal
+    # when connecting with pgadmkin, connection address: host.docker.internal
     container_name: YTParser_postgres 
     image: postgres
     restart: always

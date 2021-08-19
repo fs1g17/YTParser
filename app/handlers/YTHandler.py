@@ -5,7 +5,7 @@ from .authentication import *
 import re
 from datetime import datetime 
 import ast 
-filters = ['vk','music','instagram','tiktok']
+filters = ['vk','music','instagram','tiktok','youtube']
 
 #---------------------------- VIDEO FUNCTIONS -------------------------
 def get_date(video):
@@ -82,6 +82,11 @@ def get_latest_video_description(channel_id):
     latest_video_description = latest_video['snippet']['description']
     return latest_video_description
 
+def get_latest_video_description(channel_id:str, youtube:googleapiclient.discovery.Resource):
+    latest_video = get_latest_video(channel_id,youtube)
+    latest_video_description = latest_video['snippet']['description']
+    return latest_video_description
+
 def get_latest_video_date_yt(channel_id:str, youtube: googleapiclient.discovery.Resource):
     latest_video = get_latest_video(channel_id,youtube)
     date = get_date(latest_video)
@@ -93,6 +98,12 @@ def get_links(description):
 
 def filter_links(links):
     return [link for link in links if not re.search("|".join(["("+f+")" for f in filters]),link)]
+
+def get_latest_links(channel_id:str, youtube:googleapiclient.discovery.Resource):
+    description = get_latest_video_description(channel_id,youtube)
+    links = get_links(description)
+    filtered_links = filter_links(links)
+    return filtered_links
 
 #----------------------- CHANNEL FUNCTIONS ----------------------------------------
 #--------- RETURNS -1 if user isn't authenticated, 0 if channel doesn't exist, and 1 if it does

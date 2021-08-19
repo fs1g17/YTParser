@@ -5,9 +5,11 @@ from handlers.authentication import verify_cached_credentials
 from handlers.YTHandler import verify_channel
 
 # Database imports
-from db.models import Creator
-from db.database import get_db
-from db.schemas import AddCreator                                                                      
+# from db.models import Creator
+# from db.database import get_db
+# from db.schemas import AddCreator       
+from db.database import Creator
+from db.database import get_db                                                                  
 
 # SQLAlchemy imports 
 from sqlalchemy.orm import Session
