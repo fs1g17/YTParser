@@ -47,8 +47,16 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
     await websocket.accept()
     print("connected")
 
-    data = db.execute("SELECT * FROM creators LIMIT 10;")
+    await websocket.send_text(str({"message":"connected"}))
+
+    #data = db.execute("SELECT * FROM creators LIMIT 10;")
+    start = 100
+    end = 120
+    query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
+    data = db.execute(query)
+    await websocket.send_text(str({"message":"executed db query"}))
     youtube = get_auth_service()
+    await websocket.send_text(str({"message":"got youtube service"}))
     creators_links = []
 
     with open("youtuber_latest_links.csv","w",encoding='utf-8',newline='') as file:
@@ -57,17 +65,22 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
         for row in data:
             channel_name = row[0]
             channel_id = row[1]
-            links = get_latest_links(channel_id,youtube)
+            try:
+                links = get_latest_links(channel_id,youtube)
 
-            link_string = "\n".join([x.rstrip() for x in links])
-            mywriter.writerow([channel_name.rstrip(),link_string.rstrip()])
+                link_string = "\n".join([x.rstrip() for x in links])
+                mywriter.writerow([channel_name.rstrip(),link_string.rstrip()])
 
-            for i in range(len(links)):
-                if i==0:
-                    creators_links.append([channel_name,links[i]])
-                    continue
-                
-                creators_links.append([" ",links[i]])
+                for i in range(len(links)):
+                    if i==0:
+                        creators_links.append([channel_name,links[i]])
+                        continue
+                    
+                    creators_links.append([" ",links[i]])
+            except Exception as e:
+                print("ERROR: " + str(e))
+                await websocket.send_text(str({"message":str(e)}))
+
 
     total_num_rows = len(creators_links)
     

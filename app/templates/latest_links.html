@@ -102,6 +102,14 @@
             }
 
             ws.onmessage = function(event){
+                if(event.data.includes("message")){
+                    var node = document.createElement("li");
+                    var textNode = document.createTextNode(event.data);
+                    node.appendChild(textNode);
+                    document.getElementById("messages").appendChild(node);
+                    return;
+                }
+                
                 var spinner = document.getElementById("spinner").style.visibility = "hidden";
                 document.getElementById("download_button").style.visibility = "visible";
                 console.log("got message");

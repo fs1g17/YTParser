@@ -100,6 +100,8 @@ def filter_links(links):
     return [link for link in links if not re.search("|".join(["("+f+")" for f in filters]),link)]
 
 def get_latest_links(channel_id:str, youtube:googleapiclient.discovery.Resource):
+    if verify_channel_with_youtube(channel_id,youtube) < 1:
+        return ["CHANNEL_DOESN'T_EXIST"]
     description = get_latest_video_description(channel_id,youtube)
     links = get_links(description)
     filtered_links = filter_links(links)
@@ -107,19 +109,39 @@ def get_latest_links(channel_id:str, youtube:googleapiclient.discovery.Resource)
 
 #----------------------- CHANNEL FUNCTIONS ----------------------------------------
 #--------- RETURNS -1 if user isn't authenticated, 0 if channel doesn't exist, and 1 if it does
+def verify_channel_with_youtube(channel_id,youtube):
+    if not(is_auth()):
+        return -1
+
+    response = youtube.channels().list(
+        part="snippet",
+        id=channel_id
+    ).execute()
+
+    page_info = response["pageInfo"]
+    total_results = page_info["totalResults"]
+
+    return total_results
+
 def verify_channel(channel_id):
-    if(is_auth()):
-        youtube = get_auth_service()
-        response = youtube.channels().list(
-            part="snippet",
-            id=channel_id
-        ).execute()
+    if not(is_auth()):
+        return -1
+    youtube = get_auth_service()
+    response = youtube.channels().list(
+        part="snippet",
+        id=channel_id
+    ).execute()
 
-        page_info = response["pageInfo"]
-        total_results = page_info["totalResults"]
+    page_info = response["pageInfo"]
+    total_results = page_info["totalResults"]
 
-        return total_results
-    return -1
+    return total_results
+
+# def verify_channel(channel_id):
+#     if not(is_auth()):
+#         return -1
+#     youtube = get_auth_service()
+#     return verify_channel(channel_id,youtube)
 
 def get_uploads(channel_id,youtube):
     response = youtube.channels().list(
