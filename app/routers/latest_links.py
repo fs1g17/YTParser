@@ -1,5 +1,8 @@
+import csv
 import json
 from logging import log
+
+from starlette.responses import FileResponse
 from handlers.DBHandler import get_creators
 from handlers.YTHandler import verify_channel, get_latest_links
 from handlers.authentication import verify_cached_credentials, get_auth_service
@@ -10,8 +13,6 @@ from handlers.authentication import verify_cached_credentials, get_auth_service
 # from db.schemas import AddCreator                                                                      
 from db.database import Creator, Video 
 from db.database import get_db, validate_database
-
-
 
 # SQLAlchemy imports 
 from sqlalchemy.orm import Session
@@ -29,8 +30,18 @@ router = APIRouter()
 
 @router.get("/latestLinks", response_class=HTMLResponse)
 async def disp_auth_code(request: Request):
+    cached = verify_cached_credentials()
+    if not(cached):
+        message = "Please authorise first!"
+        return templates.TemplateResponse("latest_links_fail.html", {"request":request,"message":message})
+
     return templates.TemplateResponse("latest_links.html", {"request":request})
 
+
+@router.get("/latestLinks/downloads")
+async def download(request: Request):    
+    file_path = "youtuber_latest_links.csv"
+    return FileResponse(path=file_path, filename=file_path, media_type='text/csv')
 
 async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
     await websocket.accept()
@@ -40,17 +51,23 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
     youtube = get_auth_service()
     creators_links = []
 
-    for row in data:
-        channel_name = row[0]
-        channel_id = row[1]
-        links = get_latest_links(channel_id,youtube)
+    with open("youtuber_latest_links.csv","w",encoding='utf-8',newline='') as file:
+        mywriter = csv.writer(file)
 
-        for i in range(len(links)):
-            if i==0:
-                creators_links.append([channel_name,links[i]])
-                continue
-            
-            creators_links.append([" ",links[i]])
+        for row in data:
+            channel_name = row[0]
+            channel_id = row[1]
+            links = get_latest_links(channel_id,youtube)
+
+            link_string = "\n".join([x.rstrip() for x in links])
+            mywriter.writerow([channel_name.rstrip(),link_string.rstrip()])
+
+            for i in range(len(links)):
+                if i==0:
+                    creators_links.append([channel_name,links[i]])
+                    continue
+                
+                creators_links.append([" ",links[i]])
 
     total_num_rows = len(creators_links)
     

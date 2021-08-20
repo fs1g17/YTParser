@@ -18,6 +18,9 @@
                 <span class="sr-only">Loading...</span>
             </div>
         </div>
+        <div class="col-auto">
+            <button type="button" class="fa fa-download btn btn-primary" id="download_button" onclick=""></button>
+        </div>
     </div>
 </div>
 
@@ -57,6 +60,15 @@
 {% block scripts %}
 {{ super() }}
 <script>
+
+    document.getElementById('download_button').onclick = function() {
+        base_url = window.location.href;
+        new_url = base_url + "/downloads";
+        window.open(new_url);
+    }
+
+    document.getElementById('download_button').style.visibility = "hidden";
+
     function connect() {
         return new Promise(function(resolve,reject) {
             var ws = new WebSocket("ws://localhost:80/latestLinks/ws");
@@ -91,6 +103,7 @@
 
             ws.onmessage = function(event){
                 var spinner = document.getElementById("spinner").style.visibility = "hidden";
+                document.getElementById("download_button").style.visibility = "visible";
                 console.log("got message");
                 console.log("info: " + event.data);
 
@@ -114,23 +127,6 @@
 
                     cell_name.appendChild(cell_name_value);
                     cell_links.appendChild(cell_links_value);
-                    
-                    
-                    // for(j=0; j<value.length; j++){
-                    //     var new_row = table_body.insertRow();
-                    //     var cell_name = new_row.insertCell();
-                    //     var cell_links = new_row.insertCell();
-
-                    //     if(j==0){
-                    //         var cell_name_value = document.createTextNode(key);
-                    //     } else {
-                    //         var cell_name_value = document.createTextNode(" ");
-                    //     }
-                    //     var cell_links_value = document.createTextNode(value[j]);
-
-                    //     cell_name.appendChild(cell_name_value);
-                    //     cell_links.appendChild(cell_links_value);
-                    // }
                 }
             }
 

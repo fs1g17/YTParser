@@ -40,6 +40,5 @@ def get_credentials(flow,code):
     credentials = flow.credentials
     return credentials 
 
-# TODO: change to "return os.path.exists("CREDENTIALS_PICKLE_FILE")"
 def verify_cached_credentials():
-    return True
+    return os.path.exists("CREDENTIALS_PICKLE_FILE")
