@@ -1,6 +1,10 @@
 FROM python:3.7
+
+COPY requirements.txt /
+RUN pip3 install -r /requirements.txt
+
 EXPOSE 80 6969
 COPY ./app /app
 WORKDIR /app
-RUN pip install fastapi uvicorn SQLAlchemy sqlalchemy-utils requests alembic psycopg2 python-multipart google-api-python-client google-auth-oauthlib google-auth-httplib2 aiofiles jinja2 markdown pytest websockets databases asyncpg pydantic
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
