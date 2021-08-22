@@ -12,38 +12,23 @@ from pydantic import BaseModel
 
 #conn_url = 'postgresql+psycopg2://yourUserDBName:yourUserDBPassword@yourDBDockerContainerName/yourDBName'
 
+DB_URL = "postgresql+psycopg2://postgres:root@YTParser_postgres/youtube"
 
-DB_URL = "postgresql://postgres:root@YTParser_postgres/youtube"
+engine = create_engine(DB_URL)
+sesh = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-database = databases.Database(DB_URL)
-metadata = sqlalchemy.MetaData()
+Base = declarative_base()
 
-creators = sqlalchemy.Table(
-    "creators",
-    metadata,
-    Column("channel_name", sqlalchemy.TEXT, primary_key=True),
-    Column("channel_id", sqlalchemy.TEXT)
-)
+class Creator(Base):
+    __tablename__ = 'creators'
+    channel_name = Column(postgresql.TEXT, primary_key=True)
+    channel_id = Column(postgresql.TEXT)
 
-videos = sqlalchemy.Table(
-    "videos",
-    metadata,
-    Column("channel_id", postgresql.TEXT, primary_key=True),
-    Column("video_id", postgresql.TEXT, primary_key=True),
-    Column("video_info",postgresql.TEXT)
-)
-
-engine = sqlalchemy.create_engine(DB_URL)
-metadata.create_all(engine)
-
-class Creator(BaseModel):
-    channel_name: str
-    channel_id: str
-
-class Video(BaseModel):
-    channel_id: str
-    video_id: str
-    video_info: str
+class Video(Base):
+    __tablename__ = 'videos'
+    channel_id = Column(postgresql.TEXT, primary_key=True)
+    video_id = Column(postgresql.TEXT, primary_key=True)
+    video_info = Column(postgresql.TEXT)
 
 sesh = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -70,6 +55,57 @@ def validate_database():
 
 # def get_db():
 #     db = SessionLocal()
+#     try:
+#         yield db
+#     except:
+#         db.close()
+#     finally:
+#         db.close()
+
+# def validate_database():
+#     if not database_exists(engine.url):
+#         create_database(engine.url)
+
+
+#------------------- SECOND ATTEMPT --------------------------------------
+# DB_URL = "postgresql://postgres:root@YTParser_postgres/youtube"
+
+# database = databases.Database(DB_URL)
+# metadata = sqlalchemy.MetaData()
+
+# creators = sqlalchemy.Table(
+#     "creators",
+#     metadata,
+#     Column("channel_name", sqlalchemy.TEXT, primary_key=True),
+#     Column("channel_id", sqlalchemy.TEXT)
+# )
+
+# videos = sqlalchemy.Table(
+#     "videos",
+#     metadata,
+#     Column("channel_id", postgresql.TEXT, primary_key=True),
+#     Column("video_id", postgresql.TEXT, primary_key=True),
+#     Column("video_info",postgresql.TEXT)
+# )
+
+# engine = sqlalchemy.create_engine(DB_URL)
+# metadata.create_all(engine)
+
+# class Creator(BaseModel):
+#     __tablename__ = 'creators'
+#     channel_name: str
+#     channel_id: str
+
+# class Video(BaseModel):
+#     __tablename__ = 'videos'
+#     channel_id: str
+#     video_id: str
+#     video_info: str
+
+# sesh = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# def get_db():
+#     db = sesh()
 #     try:
 #         yield db
 #     except:

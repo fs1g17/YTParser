@@ -1,4 +1,5 @@
 import csv
+import enum
 import json
 from logging import log
 
@@ -32,8 +33,9 @@ router = APIRouter()
 async def disp_auth_code(request: Request):
     cached = verify_cached_credentials()
     if not(cached):
+        heading = "Access Denied!"
         message = "Please authorise first!"
-        return templates.TemplateResponse("latest_links_fail.html", {"request":request,"message":message})
+        return templates.TemplateResponse("blank.html", {"request":request,"heading":heading,"message":message})
 
     return templates.TemplateResponse("latest_links.html", {"request":request})
 
@@ -43,28 +45,46 @@ async def download(request: Request):
     file_path = "youtuber_latest_links.csv"
     return FileResponse(path=file_path, filename=file_path, media_type='text/csv')
 
+# async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
+#     await websocket.accept()
+
+#     await websocket.send_text(str({"message":"connected"}))
+#     while True:
+#         receive_message = await websocket.receive_text()
+#         await websocket.send_text(str({"message":"fuck you"}))
+
+
 async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
     await websocket.accept()
     print("connected")
 
     await websocket.send_text(str({"message":"connected"}))
 
-    #data = db.execute("SELECT * FROM creators LIMIT 10;")
-    start = 100
-    end = 120
-    query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
-    data = db.execute(query)
+    #data = db.execute("SELECT * FROM creators LIMIT 100;")
+    data = db.execute("SELECT * FROM creators;")
+
+
+    # start = 100
+    # end = 110
+    # query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
+    # data = db.execute(query)
     await websocket.send_text(str({"message":"executed db query"}))
     youtube = get_auth_service()
     await websocket.send_text(str({"message":"got youtube service"}))
     creators_links = []
+    i=0
 
     with open("youtuber_latest_links.csv","w",encoding='utf-8',newline='') as file:
         mywriter = csv.writer(file)
 
         for row in data:
+            
+            i += 1
+
             channel_name = row[0]
             channel_id = row[1]
+            current_message = "done: " + str(channel_name)
+            await websocket.send_text(str({"message":current_message}))
             try:
                 links = get_latest_links(channel_id,youtube)
 
@@ -98,6 +118,7 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
             if page < 0:
                 page = 0
 
+        #TODO: what if I only load in 10 users at a time? allbeit aat the cost of
         start = page*row_limit
         end = start + row_limit 
         if end > total_num_rows:
@@ -117,70 +138,3 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
                 await websocket.send_text(str({name:link}))
             except Exception as e:
                 await websocket.send_text(str(e))
-
-    # while True:
-    #     receive_message = await websocket.receive_text()
-    #     if(receive_message == "next"):
-    #         if page*row_limit < total_num_rows: 
-    #             page += 1
-    #     if(receive_message == "prev"):
-    #         page -= 1
-    #         if page < 0:
-    #             page = 0
-
-    #     start = page*row_limit
-    #     end = start + row_limit 
-
-    #     if(end > total_num_rows):
-    #         #[k : creators_links[k] for k in list(creators_links)[start:]]
-    #         vals_to_send = creators_links[start:]
-    #     else:
-    #         #vals_to_send = {k : creators_links[k] for k in list(creators_links)[start:end]}
-    #         vals_to_send = creators_links[start:end]
-    #     try:
-    #         await websocket.send_text(str(vals_to_send))
-    #     except Exception as e:
-    #         await websocket.send_text(str(e))
-
-# async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
-#     await websocket.accept()
-#     print("connected")
-
-#     data = db.execute("SELECT * FROM creators LIMIT 10;")
-#     youtube = get_auth_service()
-#     creators_links = {}
-
-#     total_num_rows = 0
-#     for row in data:
-#         channel_name = row[0]
-#         channel_id = row[1]
-#         links = get_latest_links(channel_id,youtube)
-#         creators_links[channel_name] = links
-#         total_num_rows += len(links)
-
-    
-#     page = 0
-#     row_limit = 10 
-
-#     while True:
-#         receive_message = await websocket.receive_text()
-#         if(receive_message == "next"):
-#             if page*row_limit < total_num_rows: 
-#                 page += 1
-#         if(receive_message == "prev"):
-#             page -= 1
-#             if page < 0:
-#                 page = 0
-
-#         start = page*row_limit
-#         end = start + row_limit 
-
-#         if(end > total_num_rows):
-#             vals_to_send = {k : creators_links[k] for k in list(creators_links)[start:]}
-#         else:
-#             vals_to_send = {k : creators_links[k] for k in list(creators_links)[start:end]}
-
-#         try:
-#             await websocket.send_text(str(vals_to_send))
-#         except Exception as e:
-#             await websocket.send_text(str(e))

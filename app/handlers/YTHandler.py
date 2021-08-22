@@ -137,12 +137,6 @@ def verify_channel(channel_id):
 
     return total_results
 
-# def verify_channel(channel_id):
-#     if not(is_auth()):
-#         return -1
-#     youtube = get_auth_service()
-#     return verify_channel(channel_id,youtube)
-
 def get_uploads(channel_id,youtube):
     response = youtube.channels().list(
         part="snippet,contentDetails",

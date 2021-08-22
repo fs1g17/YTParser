@@ -106,6 +106,7 @@
                     var node = document.createElement("li");
                     var textNode = document.createTextNode(event.data);
                     node.appendChild(textNode);
+                    document.getElementById("messages").textContent = '';
                     document.getElementById("messages").appendChild(node);
                     return;
                 }

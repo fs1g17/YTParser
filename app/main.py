@@ -6,15 +6,19 @@ from starlette.routing import request_response
 from routers import auth 
 from routers import creators as youtubers
 from routers import latest_links
+from routers import keyword_search
 from handlers.gui import *
 
 from sqlalchemy.orm import Session
 from db.database import *
 
+from handlers.DBHandler import update_db
+
 app = FastAPI()
 app.include_router(auth.router)
 app.include_router(youtubers.router)
 app.include_router(latest_links.router)
+app.include_router(keyword_search.router)
 
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -24,20 +28,23 @@ async def home(request: Request):
     data = "POOPY"
     return templates.TemplateResponse("page.html", {"request": request, "data": data})
 
-@app.on_event("startup")
-async def startup():
-    await database.connect()
+# @app.on_event("startup")
+# async def startup():
+#     await database.connect()
 
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
-
-@app.get("/basicGet/")
-async def shit():
-    query = creators.select()
-    return await database.fetch_all(query)
+# @app.on_event("shutdown")
+# async def shutdown():
+#     await database.disconnect()
 
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
+app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
+
+@app.get("/update")
+def update(db: Session = Depends(get_db)):
+    messages = update_db(db)
+    db.commit()
+    db.close()
+    return {"messages":messages}
 
 #----------------------- TO DELETE!!!!! --------------------------------------------
 

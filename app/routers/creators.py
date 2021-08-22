@@ -29,8 +29,9 @@ error_messages = ["Creator already in the database","YouTube can not find given 
 async def view_creators(request: Request, db: Session = Depends(get_db), page: int = 0, message: str = ""):
     cached = verify_cached_credentials()
     if not(cached):
+        heading = "Not authorised."
         message = "Please authorise first!"
-        return templates.TemplateResponse("view_creators_fail.html", {"request":request,"message":message})
+        return templates.TemplateResponse("blank.html", {"request":request,"heading":heading,"message":message})
     
     start = (page)*10 + 1
     end = start + 9
@@ -68,6 +69,7 @@ def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depend
             db.commit()
             message = ""
     except Exception as e:
+        print("ERROR: " + str(e))
         message = str(e)
 
         if "UniqueViolation" in message:
