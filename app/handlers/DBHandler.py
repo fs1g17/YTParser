@@ -1,142 +1,147 @@
 from sqlalchemy.orm import query
+from sqlalchemy.sql.expression import desc, select
 from .authentication import *
 from .YTHandler import *
 from datetime import date, datetime
 #from db.models import Creator, Video, Keyword
 from db.database import Creator, Video
-import ast
+import json
 from sqlalchemy.orm.session import Session
+from sqlalchemy import text 
 
-def get_creators(db: Session,limit:int=0):
-    query = "SELECT * FROM creators"
-    if limit > 0:
-        query += " LIMIT %s"%limit
+def get_creators(db: Session):
+    # LIMIT FOR TESTING PURPOSES
+    # results = db.execute("SELECT * FROM creators LIMIT 1;")
+    #results = db.execute("SELECT * FROM creators;")
+    results = db.query(Creator).all()
+    return results
 
-    results = db.execute(query)
-    creators = []
-    for row in results:
-        creators.append([row[0],row[1]])
-    return creators
+def get_creators_range(start: int, size: int, db: Session):
+    return db.query(Creator).filter(text("id >= %s AND id < %s"%(start,start+size)))
 
-def cache_to_db(db,channel_name):
-    results = db.execute("SELECT * FROM creators WHERE channel_name='" + channel_name + "';")
-    channel_id = ""
-    for row in results:
-        channel_id = row[1]
+def cache(db: Session):
+    messages = []
+    creators = get_creators(db=db)
+    messages.append("got creators: " + str(creators))
 
-    # TODO: check what the latest video date for a creator is
-    youtube = get_auth_service()
-    start_date = datetime.now()
-    year_videos = get_videos_by_date_change(youtube,channel_id,start_date,-1,0,0)
+    try:
+        youtube = get_auth_service()
+        messages.append("got youtube service")
+    except Exception as e:
+        messages.append("Failed to get youtube service " + str(e))
+        return messages
+    
+    for creator in creators:
+        channel_name = str(creator[0])
+        channel_id = str(creator[1])
 
-    # save all videos from the past year
-    for video in year_videos:
-        video_id = get_video_id(video)
-
-        # if video is already cached, skip 
-        if db.execute("SELECT * FROM videos WHERE channel_id='%s' AND video_id='%s'"%(channel_id,video_id)).rowcount > 0:
+        if verify_channel_with_youtube(channel_id=channel_id,youtube=youtube) < 1:
+            messages.append("Failed to cache: " + channel_name)
             continue 
 
-        video_date = get_date(video)
-        video_view = get_views(video,youtube)
-        video_desc = get_description(video)
-        video_info = {"date":video_date,"views":video_view,"description":video_desc}
-
-        to_add = Video(
-            channel_id = str(channel_id),
-            video_id = str(video_id),
-            video_info = str(video_info)
-        )
-        db.add(to_add)
-    return True
-
-
-# to parse video_info as a dict, we need to replace \' with \" and vice versa
-def clean_description(video_info: str):
-    output = ""
-    for letter in video_info:
-        if letter == '\'':
-            output += '\"'
-            continue
-
-        if letter == '\"':
-            output += '\''
-            continue
-
-        output += letter 
-
-    output = output.replace("\\n","")
-    output = output.replace("\n","")
-    return output
-
-def get_latest_video_date_db(channel_id: str, db: Session):
-    results = db.execute("SELECT * FROM videos WHERE channel_id='%s'"%channel_id)
-    
-    latest_date = datetime.now()
-    latest_date = latest_date.replace(year=latest_date.year-1)
-
-    for row in results:
-        video_info = ast.literal_eval(row[2])
-        date = parse_date(video_info['date'])
-        if date > latest_date: 
-            latest_date = date 
-    return latest_date
-
-def get_all_channel_ids(db: Session):
-    results = db.execute("SELECT channel_id FROM creators;")
-    channel_ids = []
-
-    for row in results:
-        channel_ids.append(row)
-
-    return channel_ids
-
-def cache_videos_to_db(videos: List[dict]):
-    pass
-
-def update_db(db: Session):
-    messages = []
-    channel_ids = get_all_channel_ids(db)
-    messages.append("got channel ids")
-    youtube = get_auth_service()
-    messages.append("got youtube service")
-    messages.append("-----------------")
-
-    format = "%d%M%Y"
-
-    final_message = "db is up to date!"
-
-    for ch_id in channel_ids:
         try:
-            channel_id = str(ch_id[0])
-            messages.append("looking at channel "+channel_id)
-            date_db = get_latest_video_date_db(channel_id,db)
-            messages.append("date_db: " + date_db.strftime(format))
-            date_yt = get_latest_video_date_yt(channel_id,youtube)
-            messages.append("date_yt:" + date_yt.strftime(format))
-
-            if date_db.strftime(format) != date_yt.strftime(format):
-                videos = get_videos_from_date_onward(youtube,channel_id,date_db)
-
-                for video in videos:
-                    video_id = get_video_id(video)
-
-                    if db.execute("SELECT * FROM videos WHERE channel_id='%s' AND video_id='%s'"%(channel_id,video_id)).rowcount > 0:
-                        continue 
-
-                    video_date = get_date(video)
-                    video_view = get_views(video,youtube)
-                    video_desc = get_description(video)
-                    video_info = {"date":video_date,"views":video_view,"description":video_desc}
-
-                    to_add = Video(
-                        channel_id = str(channel_id),
-                        video_id = str(video_id),
-                        video_info = str(video_info)
-                    )
-                    db.add(to_add)
-                    final_message = "db updated!"
+            now = datetime.now()
+            videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=0,month=-1,day=0)
+            #videos = get_videos_by_date_change(channel_id,youtube,now,0,-1,0)
         except Exception as e:
-            messages.append("ERROR: " + str(e))
+            messages.append("Failed to get youtube videos for " + channel_name + str(e))
+            return messages
+
+        for video in videos:
+            video_id = get_video_id(video)
+            video_date = get_datetime(video).date()
+            video_view = get_views(video,youtube)
+            video_desc = get_description(video)
+
+            try:
+                to_add = Video(
+                    channel_id=channel_id,
+                    video_id=video_id,
+                    date=video_date,
+                    views=int(video_view),
+                    description=video_desc
+                )
+                db.add(to_add)
+            except Exception as e:
+                messages.append("Failed to add video: " + channel_name + " " + str(video_id) + " : " + str(e))
+    return messages
+
+def clean_input(input: str) -> str:
+    input = input.replace("\n\n"," ")
+    input = input.replace("\\n", " ")
+    input = input.replace("\n", " ")
+    return input 
+
+def remove_creator_videos(channel_id: str, db: Session):
+    db.execute("DELETE FROM videos WHERE channel_id='%s';"%channel_id)
+
+def cache_range(start: int, size: int, db: Session):
+    messages = {}
+
+    completed = []
+    failed = []
+    general = []
+
+    messages['completed'] = completed 
+    messages['failed'] = failed 
+    messages['general'] = general
+    try:
+        creators = get_creators_range(start=start,size=size,db=db)
+        general.append("got creators")
+    except Exception as e:
+        failed.append("DBHandler: Failed getting creators: " + str(e))
+        return messages
+    try:
+        youtube = get_auth_service()
+        completed.append("got youtube service")
+    except Exception as e:
+        failed.append("DBHandler: Failed to get youtube service " + str(e))
+        return messages
     
-    return [final_message] + messages
+    for creator in creators:
+        channel_name = creator.channel_name
+        channel_id = creator.channel_id
+
+        if verify_channel_with_youtube(channel_id=channel_id,youtube=youtube) < 1:
+            failed.append("DBHandler: Failed to cache: " + channel_name)
+            continue 
+
+        try:
+            now = datetime.now()
+            videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=-1,month=0,day=0)
+            #videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=0,month=-1,day=0)
+            #videos = get_videos_by_date_change(channel_id,youtube,now,0,-1,0)
+        except Exception as e:
+            failed.append("DBHandler: Failed to get youtube videos for " + channel_name + str(e))
+            continue 
+
+        for video in videos:
+            video_id = get_video_id(video)
+            video_date = get_datetime(video)
+            video_view = get_views(video,youtube)
+            video_desc = get_description(video)
+            video_desc = clean_input(video_desc)
+
+            if db.query(Video.video_id).filter_by(video_id=video_id).first() is not None:
+                failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
+                failed.append("DBHandler: Skipping video as it's already cached " + str(failure))
+                continue  
+
+            try:
+                to_add = Video(
+                    channel_id=channel_id,
+                    video_id=video_id,
+                    date=video_date,
+                    views=int(video_view),
+                    description=video_desc
+                )
+
+                db.add(to_add)
+            except Exception as e:
+                failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
+                failed.append("DBHandler: Failed to add video. " + str(failure))
+        #db.commit()
+        completed.append("completed caching for: " + str(channel_name))
+    return messages
+
+    # TODO: update cache function!

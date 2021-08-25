@@ -12,6 +12,7 @@ from db.database import Creator
 from db.database import get_db                                                                  
 
 # SQLAlchemy imports 
+from sqlalchemy import text 
 from sqlalchemy.orm import Session
 
 # FastAPI imports
@@ -25,6 +26,7 @@ templates = Jinja2Templates(directory="templates")
 
 error_messages = ["Creator already in the database","YouTube can not find given channel","Please authenticate yourself first"]
 
+# --------------- TODO: delete duplicate code for verifying credentials, DRY!! 
 @router.get("/viewCreators", response_class=HTMLResponse)
 async def view_creators(request: Request, db: Session = Depends(get_db), page: int = 0, message: str = ""):
     cached = verify_cached_credentials()
@@ -32,57 +34,80 @@ async def view_creators(request: Request, db: Session = Depends(get_db), page: i
         heading = "Not authorised."
         message = "Please authorise first!"
         return templates.TemplateResponse("blank.html", {"request":request,"heading":heading,"message":message})
+
+    start = page*10 + 1
+    size = 10
     
-    start = (page)*10 + 1
-    end = start + 9
-    query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
-    results = db.execute(query)
+    results = db.query(Creator).filter(text("id >= %s AND id < %s"%(start,start+size)))
     ytbrs = []
-    for i,row in enumerate(results):
-        channel_name = row[0]
-        channel_id = row[1]
+    for creator in results:
+        channel_name = creator.channel_name
+        channel_id = creator.channel_id
         ytbrs.append([channel_name,channel_id])
     
-    num_creators = db.execute("SELECT * FROM creators").rowcount
+    #num_creators = db.execute("SELECT * FROM creators").rowcount
+    num_creators = db.query(Creator).count()
     return templates.TemplateResponse("view_creators.html", {"request":request,"ytbrs":ytbrs, "page":page, "num_creators":num_creators, "message":message})
 
 
-@router.get("/addCreator", response_class=RedirectResponse)
-def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depends(get_db), page: int = 0):   
-    channel_status = verify_channel(ch_id)
-
-    if(channel_status == -1):
-        message = error_messages[2]
-    if(channel_status == 0):
-        message = error_messages[1]
+# @router.get("/viewCreators", response_class=HTMLResponse)
+# async def view_creators(request: Request, db: Session = Depends(get_db), page: int = 0, message: str = ""):
+#     cached = verify_cached_credentials()
+#     if not(cached):
+#         heading = "Not authorised."
+#         message = "Please authorise first!"
+#         return templates.TemplateResponse("blank.html", {"request":request,"heading":heading,"message":message})
     
-    if(channel_status < 1):
-        return "/viewCreators?message=" + message
+#     start = (page)*10 + 1
+#     end = start + 9
+#     query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
+#     results = db.execute(query)
+#     ytbrs = []
+#     for i,row in enumerate(results):
+#         channel_name = row[0]
+#         channel_id = row[1]
+#         ytbrs.append([channel_name,channel_id])
+    
+#     num_creators = db.execute("SELECT * FROM creators").rowcount
+#     return templates.TemplateResponse("view_creators.html", {"request":request,"ytbrs":ytbrs, "page":page, "num_creators":num_creators, "message":message})
 
-    try:
-        if(len(ch_name) > 0 and len(ch_id) > 0):
-            to_create = Creator (
-                channel_name = ch_name,
-                channel_id = ch_id
-            )
-            db.add(to_create)
-            db.commit()
-            message = ""
-    except Exception as e:
-        print("ERROR: " + str(e))
-        message = str(e)
+# -----------------TODO: update "addCreator" to fascilitate pythonic approach!
+# @router.get("/addCreator", response_class=RedirectResponse)
+# def add_creator(ch_name: str, ch_id: str, request: Request, db: Session = Depends(get_db), page: int = 0):   
+#     channel_status = verify_channel(ch_id)
 
-        if "UniqueViolation" in message:
-            message = error_messages[0]
+#     if(channel_status == -1):
+#         message = error_messages[2]
+#     if(channel_status == 0):
+#         message = error_messages[1]
+    
+#     if(channel_status < 1):
+#         return "/viewCreators?message=" + message
 
-    if message == "":
-        return "/viewCreators"
+#     try:
+#         if(len(ch_name) > 0 and len(ch_id) > 0):
+#             to_create = Creator (
+#                 channel_name = ch_name,
+#                 channel_id = ch_id
+#             )
+#             db.add(to_create)
+#             db.commit()
+#             message = ""
+#     except Exception as e:
+#         print("ERROR: " + str(e))
+#         message = str(e)
 
-    if page == 0:
-        page_url_attribute = ""
-    else:
-        page_url_attribute = "&page=" + str(page)
-    return "/viewCreators?message=" + message + page_url_attribute
+#         if "UniqueViolation" in message:
+#             message = error_messages[0]
+
+#     if message == "":
+#         return "/viewCreators"
+
+#     if page == 0:
+#         page_url_attribute = ""
+#     else:
+#         page_url_attribute = "&page=" + str(page)
+#     return "/viewCreators?message=" + message + page_url_attribute
         
 #TODO: automatically navigate to the page with the newly added creator??
 #TODO: regex the youtube channel_id to make sure that it actually works! <-- can't regex, maybe check with API?

@@ -1,0 +1,7 @@
+
+requirements2.txt
+app/CREDENTIALS_PICKLE_FILE
+shit.ipynb
+app/handlers/DBHandler_old.py
+app/handlers/YTHandler_old.py
+client_secrets.json
