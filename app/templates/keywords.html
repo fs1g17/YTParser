@@ -21,15 +21,36 @@
     </div>
 </div>
 
-<ul id="messages">
+<p id="messages"></p>
+
+<ul id="keywords">
 </ul>
 
-<div class="container-fluid">
+<!-- <div class="container-fluid"> -->
+<div class="container"> 
+    <div class="row">
+        <div class="col-8">
+            <input class="form-control" id="keyword_input" placeholder="Enter a keyword">
+        </div>
+        <div class="col-1">
+            <button type="button" class="btn btn-primary" id="add_keyword" onclick="sendKeyword(event)">OK</button>
+        </div>
+        <div class="col-2">
+            <button type="button" class="btn btn-primary" id="search" onclick="sendSearch(event)">Search</button>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="container-fluid"> -->
+<div class="container">    
     <table class="table">
-        <thead class="tableRowWidth">
+        <thead>
             <tr>
-                <th scope="col">Channel</th>
-                <th scope="col">Video Info</th>
+                <th scope="col" style="width: 10%">Sponsor</th>
+                <th scope="col" style="width: 10%">Channel</th>
+                <th scope="col" style="width: 10%">Date</th>
+                <th scope="col" style="width: 10%">Views</th>
+                <th scope="col" style="width: 60%">Link</th>
             </tr>
         </thead>
         <tbody id="tablecontents" class="tableRowWidth">
@@ -39,10 +60,12 @@
     <form>
         <div class="form-group row">
             <div class="col-6">
-                <button type="button" class="btn btn-primary" id="prev" onclick="">back</button>
+                <!-- <button type="button" class="btn btn-primary" id="prev" onclick="">back</button> -->
+                <button type="button" class="btn btn-primary" id="prev" onclick="sendPrev(event)">back</button>
             </div>
             <div class="col-6">
-                <button type="button" class="btn btn-primary float-right" id="next" onclick="">next</button>
+                <!-- <button type="button" class="btn btn-primary float-right" id="next" onclick="">next</button> -->
+                <button type="button" class="btn btn-primary float-right" id="next" onclick="sendNext(event)">next</button>
             </div>
         </div>
     </form>
@@ -52,7 +75,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script>
+<script charset="utf-8">
 
     function connect() {
         return new Promise(function(resolve,reject) {
@@ -71,69 +94,96 @@
             let ws = await connect();
             console.log("connected!");
 
-            await ws.send("ready!");
-            console.log("ready");
+            //await ws.send(JSON.stringify({"status":"ready"}));
+            await ws.send({"status":"ready"});
+            console.log("notified server");
 
             var table_body = document.getElementById("tablecontents");
+            var spinner = document.getElementById("spinner") 
+            var keyword_input = document.getElementById("keyword_input")
+
+            ws.onclose = function() {
+                console.log("WEBSOCKET CLOSED");
+            }
+
+            ws.onerror = function(err) {
+                console.log("ERROR: " + err);
+            }
+            
+            ws.onmessage = function(event) {
+                try {
+                    info = JSON.parse(event.data);
+                    if(info.hasOwnProperty('message')){
+                        console.log("received: " + JSON.stringify(info));
+                        return;
+                    }
+
+                    spinner.style.visibility = "hidden";
+                    console.log("Parsed as JSON");
+                    keys = Object.keys(info);
+                    console.log("Got the keys");
+
+                    var new_row = table_body.insertRow();
+
+                    for(i=0; i<keys.length; i++){
+                        var cell = new_row.insertCell();
+                        var cell_val = document.createTextNode(info[keys[i]]);
+                        cell.appendChild(cell_val);
+                    }
+
+                    console.log("Looped through all the values!");
+
+                    new_row = table_body.insertRow();
+                } catch(err) {
+                    //notify the user of outcome of action
+                    error_message = "ERROR: " + err;
+                    document.getElementById("messages").value = error_message;
+                    console.log("ERROR" + err);
+                } 
+            }
 
             document.getElementById('prev').onclick = await function() {
-                ws.send("prev");
-                table_body.textContent = '';
+                ws.send({"action":"prev"});
             }
 
             document.getElementById('next').onclick = await function() {
-                ws.send("next");
-                table_body.textContent = '';
+                ws.send({"action":"next"});
             }
 
-            ws.onmessage = function(event){
-                if(event.data.includes("message")){
-                    var node = document.createElement("li");
-                    var textNode = document.createTextNode(event.data);
-                    node.appendChild(textNode);
-                    //document.getElementById("messages").textContent = '';
-                    document.getElementById("messages").appendChild(node);
-                    return;
-                }
-                
-                var spinner = document.getElementById("spinner").style.visibility = "hidden";
-                console.log("got message");
-                console.log("info: " + event.data);
+            document.getElementById('search').onclick = await function() {
+                spinner.style.visibility = "visible";
+                console.log("querying the database");
+                ws.send({"action":"search"});
+                console.log("finished sending")
+            }
 
-                input_string = event.data;
-                input_string = input_string.replaceAll('\'',"\"");
-                videos = JSON.parse(input_string);
-                console.log("JSON: ", videos);
+            document.getElementById('add_keyword').onclick = await function(){
+                keyword = keyword_input.value;
 
-                keys = Object.keys(videos);
-                var new_row = table_body.insertRow();
-                for(i=0; i<keys.length; i++){
-                    var cell = new_row.insertCell();
-                    var cell_val = document.createTextNode(videos[keys[i]]);
-
-                    cell.appendChild(cell_val);
-
-                    if(i%2==1){
-                        new_row = table_body.insertRow();
+                if(keyword.length > 0){
+                    try{
+                        console.log("adding keyword")
+                        //message = JSON.stringify({"keyword":keyword});
+                        ws.send({"keyword":keyword});
+                        console.log("sent keyword to server")
+                        notification = "Added keyword: " + keyword; 
+                        keyword_input.value = '';
+                    } catch(err){
+                        notification = "Failed to add keyword: " + err.message;
+                        console.log("ERROR: when adding keyword got " + err.message)
                     }
+                } else {
+                    notification = "Keyword can't be empty!";
                 }
 
-                // keys = Object.keys(videos);
-                // for(i=0; i<keys.length; i++){
-                //     key = keys[i];
-                //     value = videos[key];
+                // Add keyword to keywords (so user can see what keywords have been added)
+                var node = document.createElement("li");
+                var textNode = document.createTextNode(keyword);
+                node.appendChild(textNode);
+                document.getElementById("keywords").appendChild(node);
 
-                //     var new_row = table_body.insertRow();
-                //     var cell_channel_name = new_row.insertCell();
-                //     var cell_video = new_row.insertCell();
-
-                    
-                //     var cell_channel_name_value = document.createTextNode(key);
-                //     var cell_video_value = document.createTextNode(value);
-
-                //     cell_channel_name.appendChild(cell_channel_name_value);
-                //     cell_video.appendChild(cell_video_value);
-                // }
+                //notify the user of outcome of action
+                document.getElementById("messages").value = notification;
             }
 
         } catch(error){
@@ -141,7 +191,113 @@
         }
     }
 
-    procesing();
+    //procesing();
+
+    var ws = new WebSocket("ws://localhost:80/keywords/ws");
+    var table_body = document.getElementById("tablecontents");
+    var spinner = document.getElementById("spinner"); 
+    spinner.style.visibility = "hidden";
+    var keyword_input = document.getElementById("keyword_input")
+
+    ws.onopen = function(event) {
+        console.log("connection to server established");
+    }
+
+    ws.onclose = function() {
+        console.log("websocket is closing");
+    }
+
+    ws.onmessage = function(event) {
+        try{
+            info = JSON.parse(event.data);
+            if(info.hasOwnProperty('message')){
+                console.log("received: ", event.data);
+            } else if(info.hasOwnProperty('action')){
+                if(info['action'] == 'clear'){
+                    table_body.innerHTML = "";
+                }
+            } else {
+                //process data here
+                console.log("received: " + JSON.stringify(info))
+                spinner.style.visibility = "hidden";
+                console.log("Parsed as JSON");
+                keys = Object.keys(info);
+                console.log("Got the keys");
+
+                var new_row = table_body.insertRow();
+
+                for(i=0; i<keys.length; i++){
+                    var cell = new_row.insertCell();
+                    var cell_val = document.createTextNode(info[keys[i]]);
+                    cell.appendChild(cell_val);
+                }
+
+                console.log("Looped through all the values!");
+            }
+        } catch(err){
+            console.log("caught error ", err);
+        }
+    }
+
+    function sendNext(event) {
+        ws.send(JSON.stringify({"action":"next"}))
+        event.preventDefault();
+    }
+
+    function sendPrev(event) {
+        ws.send(JSON.stringify({"action":"prev"}))
+        event.preventDefault();
+    }
+
+    function sendKeyword(event) {
+        new_keyword = document.getElementById('keyword_input').value;
+        if(new_keyword.length > 0){
+            ws.send(JSON.stringify({"action":"add_keyword","keyword":new_keyword}))
+            document.getElementById('keyword_input').value = '';
+            console.log("sent keyword: " + new_keyword);
+            document.getElementById('search').style.visibility = "visible";
+        } else {
+            console.log('didnt send anything, as keyword is empty!');
+        }
+        event.preventDefault();
+    }
+
+    function sendSearch(event) {
+        spinner.style.visibility = "visible";
+        document.getElementById('search').style.visibility = "hidden";
+        ws.send(JSON.stringify({"action":"search"}))
+        event.preventDefault();
+    }
+
+    //---------------- WORKING
+    // var ws = new WebSocket("ws://localhost:80/keywords/ws");
+    
+    // ws.onopen = function(event) {
+    //     console.log("connection to server established");
+    // }
+
+    // ws.onclose = function() {
+    //     console.log("websocket is closing");
+    // }
+
+    // ws.onmessage = function(event) {
+    //     console.log("received: ", event.data);
+    // }
+
+    // function sendNext(event) {
+    //     ws.send("next")
+    //     event.preventDefault();
+    // }
+
+    // function sendPrev(event) {
+    //     ws.send("prev")
+    //     event.preventDefault();
+    // }
+
+    // function sendSearch(event) {
+    //     ws.send("search")
+    //     event.preventDefault();
+    // }
 
 </script>
 

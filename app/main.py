@@ -13,13 +13,14 @@ from routers import latest_links
 from routers import keyword_search
 from handlers.gui import *
 import csv 
+import asyncio 
 
 from sqlalchemy.orm import Session
 from db.database import *
 import json
 from datetime import date, datetime
 
-from handlers.DBHandler import cache, get_creators_range, cache_range
+from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords
 from handlers.YTHandler import *
 
 # import alembic.config
@@ -119,6 +120,30 @@ def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
         return {"success!":str(rows)}
     except Exception as e:
         return {"Fail":str(e)}
+
+@app.get("/TEST")
+def test(start: int, size: int, db: Session = Depends(get_db)):
+    try:
+        creators = db.query(Creator).offset(start).limit(size).all()
+        rows = []
+        for creator in creators:
+            rows.append([creator.channel_name,creator.channel_id])
+        return {"sucess":creators}
+    except Exception as e:
+        return {"failure":str(e)}
+
+@app.get("/searchKeywords")
+async def search(db: Session = Depends(get_db)):
+    try:
+        # do the keyword search here!
+        loop = asyncio.get_event_loop()
+        video_keywords = await loop.run_in_executor(None, search_keywords, keywords, db)
+        output = [(video.video_id,sponsors)for video,sponsors in video_keywords]
+        return {"success!":str(output)}
+    except Exception as e:
+        return {"failure!":str(e)}
+        
+
 
 
 keywords = ["bridgestone",

@@ -76,6 +76,7 @@ def remove_creator_videos(channel_id: str, db: Session):
     db.execute("DELETE FROM videos WHERE channel_id='%s';"%channel_id)
 
 def cache_range(start: int, size: int, db: Session):
+
     messages = {}
 
     completed = []
@@ -145,3 +146,28 @@ def cache_range(start: int, size: int, db: Session):
     return messages
 
     # TODO: update cache function!
+
+# get videos whose description matches any one of the keywords!
+
+
+def search_keywords(keywords: List[str], db: Session) -> List[Tuple[Video,List[str]]]:
+    videos = []
+
+    for video in db.query(Video).all():
+        description = video.description
+        matched_keywords = []
+        for keyword in keywords:
+            if keyword.lower() in description.lower():
+                matched_keywords.append(keyword)
+        if len(matched_keywords) > 0:
+            videos.append([video,matched_keywords])
+    return videos 
+
+def get_channel_names_ids(db: Session) -> dict:
+    channel_names_ids = {}
+    for creator in db.query(Creator).all():
+        channel_name = creator.channel_name
+        channel_id = creator.channel_id
+
+        channel_names_ids[channel_id] = channel_name
+    return channel_names_ids
