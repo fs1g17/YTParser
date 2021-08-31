@@ -76,123 +76,6 @@
 {% block scripts %}
 {{ super() }}
 <script charset="utf-8">
-
-    function connect() {
-        return new Promise(function(resolve,reject) {
-            var ws = new WebSocket("ws://localhost:80/keywords/ws");
-            ws.onopen = function() {
-                resolve(ws);
-            };
-            ws.onerror = function(err){
-                reject(err);
-            };
-        });
-    }
-
-    async function procesing() {
-        try{
-            let ws = await connect();
-            console.log("connected!");
-
-            //await ws.send(JSON.stringify({"status":"ready"}));
-            await ws.send({"status":"ready"});
-            console.log("notified server");
-
-            var table_body = document.getElementById("tablecontents");
-            var spinner = document.getElementById("spinner") 
-            var keyword_input = document.getElementById("keyword_input")
-
-            ws.onclose = function() {
-                console.log("WEBSOCKET CLOSED");
-            }
-
-            ws.onerror = function(err) {
-                console.log("ERROR: " + err);
-            }
-            
-            ws.onmessage = function(event) {
-                try {
-                    info = JSON.parse(event.data);
-                    if(info.hasOwnProperty('message')){
-                        console.log("received: " + JSON.stringify(info));
-                        return;
-                    }
-
-                    spinner.style.visibility = "hidden";
-                    console.log("Parsed as JSON");
-                    keys = Object.keys(info);
-                    console.log("Got the keys");
-
-                    var new_row = table_body.insertRow();
-
-                    for(i=0; i<keys.length; i++){
-                        var cell = new_row.insertCell();
-                        var cell_val = document.createTextNode(info[keys[i]]);
-                        cell.appendChild(cell_val);
-                    }
-
-                    console.log("Looped through all the values!");
-
-                    new_row = table_body.insertRow();
-                } catch(err) {
-                    //notify the user of outcome of action
-                    error_message = "ERROR: " + err;
-                    document.getElementById("messages").value = error_message;
-                    console.log("ERROR" + err);
-                } 
-            }
-
-            document.getElementById('prev').onclick = await function() {
-                ws.send({"action":"prev"});
-            }
-
-            document.getElementById('next').onclick = await function() {
-                ws.send({"action":"next"});
-            }
-
-            document.getElementById('search').onclick = await function() {
-                spinner.style.visibility = "visible";
-                console.log("querying the database");
-                ws.send({"action":"search"});
-                console.log("finished sending")
-            }
-
-            document.getElementById('add_keyword').onclick = await function(){
-                keyword = keyword_input.value;
-
-                if(keyword.length > 0){
-                    try{
-                        console.log("adding keyword")
-                        //message = JSON.stringify({"keyword":keyword});
-                        ws.send({"keyword":keyword});
-                        console.log("sent keyword to server")
-                        notification = "Added keyword: " + keyword; 
-                        keyword_input.value = '';
-                    } catch(err){
-                        notification = "Failed to add keyword: " + err.message;
-                        console.log("ERROR: when adding keyword got " + err.message)
-                    }
-                } else {
-                    notification = "Keyword can't be empty!";
-                }
-
-                // Add keyword to keywords (so user can see what keywords have been added)
-                var node = document.createElement("li");
-                var textNode = document.createTextNode(keyword);
-                node.appendChild(textNode);
-                document.getElementById("keywords").appendChild(node);
-
-                //notify the user of outcome of action
-                document.getElementById("messages").value = notification;
-            }
-
-        } catch(error){
-            console.log("ERROR: " + error);
-        }
-    }
-
-    //procesing();
-
     var ws = new WebSocket("ws://localhost:80/keywords/ws");
     var table_body = document.getElementById("tablecontents");
     var spinner = document.getElementById("spinner"); 
@@ -214,7 +97,7 @@
                 console.log("received: ", event.data);
             } else if(info.hasOwnProperty('action')){
                 if(info['action'] == 'clear'){
-                    table_body.innerHTML = "";
+                    table_body.textContent = '';
                 }
             } else {
                 //process data here

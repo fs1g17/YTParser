@@ -15,41 +15,43 @@ templates = Jinja2Templates(directory="templates")
 router = APIRouter()
 
 keywords = ["bridgestone",
-                "michelin",
-                "continental",
-                "nokian",
-                "kumho",
-                "goodyear",
-                "hankook",
-                "pirelli",
-                "yokohama",
-                "dunlop",
-                "marshal crugen",
-                "tigar",
-                "formula",
-                "viatti",
-                "kormoran",
-                "semperit",
-                "toyo",
-                "tunga",
-                "matador",
-                "nexen",
-                "cordiant",
-                "nitto",
-                "msxxis",
-                "laufen",
-                "debica",
-                "kama",
-                "nankang",
-                "tristar",
-                "cst",
-                "contyre",
-                "roadstone",
-                "cooper",
-                "bfgoodrich",
-                "general tire",
-                "gislaved",
-                "triangle"]
+            "michelin",
+            "continental",
+            "nokian",
+            "kumho",
+            "goodyear",
+            "hankook",
+            "pirelli",
+            "yokohama",
+            "dunlop",
+            "marshal crugen",
+            "tigar",
+            "formula",
+            "viatti",
+            "kormoran",
+            "semperit",
+            "toyo",
+            "tunga",
+            "matador",
+            "nexen",
+            "cordiant",
+            "nitto",
+            "msxxis",
+            "laufen",
+            "debica",
+            "kama",
+            "nankang",
+            "tristar",
+            "cst",
+            "contyre",
+            "roadstone",
+            "cooper",
+            "bfgoodrich",
+            "general tire",
+            "gislaved",
+            "triangle"]
+
+russian_keywords = ["Авито","Авто.ру","Автоспот","Дром","СберАвто"]
 
 @router.get("/keywords", response_class=HTMLResponse)
 async def keyword_endpoint(request: Request):
@@ -65,6 +67,16 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
 
     video_keywords = None
 
+    # this coroutine sends each pieace of data one by one through the websocket
+    async def send_info(video_keywords: List[Tuple[Video,List[str]]],channel_names_ids: dict):
+        for video,sponsors in video_keywords:
+            sponsor = sponsors
+            channel = channel_names_ids[video.channel_id]
+            publish_date = str(video.date)
+            views = video.views
+            link = "youtube.com/watch?v=" + video.video_id
+            await websocket.send_json({"sponsor":sponsor,"channel":channel,"date":publish_date,"views":views,"link":link})
+
     while True:
         data = await websocket.receive_json()
         action = data['action']
@@ -78,6 +90,7 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
                 
             page += 1 
             start = page*10 
+            
             if len(video_keywords) - start < 10:
                 subsection = video_keywords[start:]
             else:
@@ -85,16 +98,7 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
                 subsection = video_keywords[start:end]
 
             await websocket.send_json({"action":"clear"})
-            
-            #send_info(subsection)
-            for video,sponsors in subsection:
-                #Sponsor	Channel	Date	Views	Link
-                sponsor = sponsors
-                channel = channel_names_ids[video.channel_id]
-                publish_date = str(video.date)
-                views = video.views
-                link = "youtube.com/watch?v=" + video.video_id
-                await websocket.send_json({"sponsor":sponsor,"channel":channel,"date":publish_date,"views":views,"link":link})
+            await send_info(video_keywords=subsection,channel_names_ids=channel_names_ids)
         elif action == 'prev':
             await websocket.send_json({"message":"got prev"})
 
@@ -108,33 +112,19 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
             end = start + 10
 
             await websocket.send_json({"action":"clear"})
-            for video,sponsors in video_keywords[start:end]:
-                #Sponsor	Channel	Date	Views	Link
-                sponsor = sponsors
-                channel = channel_names_ids[video.channel_id]
-                publish_date = str(video.date)
-                views = video.views
-                link = "youtube.com/watch?v=" + video.video_id
-                await websocket.send_json({"sponsor":sponsor,"channel":channel,"date":publish_date,"views":views,"link":link})
+            await send_info(video_keywords=video_keywords[start:end],channel_names_ids=channel_names_ids)
         elif action == 'add_keyword':
             new_keyword = data['keyword']
             keywords.append(new_keyword)
             await websocket.send_json({"message":"appended new keyword " + new_keyword})
         elif action == 'search':
-            video_keywords = search_keywords(keywords=keywords,db=db)
+            video_keywords = search_keywords(keywords=keywords+russian_keywords,db=db)
             await websocket.send_json({"message":"got search"})
 
             page = 0
             max_page = math.floor(len(video_keywords)/10)
 
             channel_names_ids = get_channel_names_ids(db)
-            for video,sponsors in video_keywords[:10]:
-                #Sponsor	Channel	Date	Views	Link
-                sponsor = sponsors
-                channel = channel_names_ids[video.channel_id]
-                publish_date = str(video.date)
-                views = video.views
-                link = "youtube.com/watch?v=" + video.video_id
-                await websocket.send_json({"sponsor":sponsor,"channel":channel,"date":publish_date,"views":views,"link":link})
+            await send_info(video_keywords=video_keywords[:10],channel_names_ids=channel_names_ids)
         else:
             await websocket.send_json({"message":"something went wrong"})
