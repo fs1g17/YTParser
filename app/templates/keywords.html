@@ -18,6 +18,9 @@
                 <span class="sr-only">Loading...</span>
             </div>
         </div>
+        <div class="col-auto">
+            <button type="button" class="fa fa-download btn btn-primary" id="download_button" onclick="download(event)"></button>
+        </div>
     </div>
 </div>
 
@@ -77,11 +80,14 @@
 {{ super() }}
 <script charset="utf-8">
     var ws = new WebSocket("ws://localhost:80/keywords/ws");
-    var table_body = document.getElementById("tablecontents");
     var spinner = document.getElementById("spinner"); 
-    spinner.style.visibility = "hidden";
+    var table_body = document.getElementById("tablecontents");
     var keyword_input = document.getElementById("keyword_input")
+    var download_button = document.getElementById("download_button");
 
+    spinner.style.visibility = "hidden";
+    download_button.style.visibility = "hidden";
+    
     ws.onopen = function(event) {
         console.log("connection to server established");
     }
@@ -101,12 +107,13 @@
                 }
             } else {
                 //process data here
-                console.log("received: " + JSON.stringify(info))
                 spinner.style.visibility = "hidden";
-                console.log("Parsed as JSON");
-                keys = Object.keys(info);
-                console.log("Got the keys");
+                download_button.style.visibility = "visible";
 
+                console.log("received: " + JSON.stringify(info))
+                console.log("Parsed as JSON");
+
+                keys = Object.keys(info);
                 var new_row = table_body.insertRow();
 
                 for(i=0; i<keys.length; i++){
@@ -114,12 +121,16 @@
                     var cell_val = document.createTextNode(info[keys[i]]);
                     cell.appendChild(cell_val);
                 }
-
-                console.log("Looped through all the values!");
             }
         } catch(err){
             console.log("caught error ", err);
         }
+    }
+
+    function download(event) {
+        base_url = window.location.href;
+        new_url = base_url + "/downloads";
+        window.open(new_url);
     }
 
     function sendNext(event) {
@@ -151,37 +162,6 @@
         ws.send(JSON.stringify({"action":"search"}))
         event.preventDefault();
     }
-
-    //---------------- WORKING
-    // var ws = new WebSocket("ws://localhost:80/keywords/ws");
-    
-    // ws.onopen = function(event) {
-    //     console.log("connection to server established");
-    // }
-
-    // ws.onclose = function() {
-    //     console.log("websocket is closing");
-    // }
-
-    // ws.onmessage = function(event) {
-    //     console.log("received: ", event.data);
-    // }
-
-    // function sendNext(event) {
-    //     ws.send("next")
-    //     event.preventDefault();
-    // }
-
-    // function sendPrev(event) {
-    //     ws.send("prev")
-    //     event.preventDefault();
-    // }
-
-    // function sendSearch(event) {
-    //     ws.send("search")
-    //     event.preventDefault();
-    // }
-
 </script>
 
 {% endblock %}
