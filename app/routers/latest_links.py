@@ -1,7 +1,7 @@
 import csv
-import enum
-import json
+import math
 from logging import log
+from typing import List, Tuple
 
 from starlette.responses import FileResponse
 from handlers.DBHandler import get_creators
@@ -45,96 +45,66 @@ async def download(request: Request):
     file_path = "youtuber_latest_links.csv"
     return FileResponse(path=file_path, filename=file_path, media_type='text/csv')
 
-# async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
-#     await websocket.accept()
-
-#     await websocket.send_text(str({"message":"connected"}))
-#     while True:
-#         receive_message = await websocket.receive_text()
-#         await websocket.send_text(str({"message":"fuck you"}))
-
-
 async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db)):
     await websocket.accept()
-    print("connected")
 
-    await websocket.send_text(str({"message":"connected"}))
-
-    #data = db.execute("SELECT * FROM creators LIMIT 100;")
-    data = db.execute("SELECT * FROM creators;")
-
-
-    # start = 100
-    # end = 110
-    # query = "SELECT * FROM ( SELECT creators.*, ROW_NUMBER () OVER () as rnum FROM creators ) x WHERE rnum BETWEEN %s AND %s;"%(start,end)
-    # data = db.execute(query)
-    await websocket.send_text(str({"message":"executed db query"}))
     youtube = get_auth_service()
-    await websocket.send_text(str({"message":"got youtube service"}))
-    creators_links = []
-    i=0
+    creators_links = {}
+    rows = []
+    for creator in db.query(Creator).all():
+        channel_id = creator.channel_id
+        channel_name = creator.channel_name
 
-    with open("youtuber_latest_links.csv","w",encoding='utf-8',newline='') as file:
-        mywriter = csv.writer(file)
+        try:
+            links = get_latest_links(channel_id,youtube)
+            creators_links[channel_name] = links
 
-        for row in data:
-            
-            i += 1
-
-            channel_name = row[0]
-            channel_id = row[1]
-            current_message = "done: " + str(channel_name)
-            await websocket.send_text(str({"message":current_message}))
-            try:
-                links = get_latest_links(channel_id,youtube)
-
-                link_string = "\n".join([x.rstrip() for x in links])
-                mywriter.writerow([channel_name.rstrip(),link_string.rstrip()])
-
-                for i in range(len(links)):
-                    if i==0:
-                        creators_links.append([channel_name,links[i]])
-                        continue
-                    
-                    creators_links.append([" ",links[i]])
-            except Exception as e:
-                print("ERROR: " + str(e))
-                await websocket.send_text(str({"message":str(e)}))
-
-
-    total_num_rows = len(creators_links)
-    
-    page = 0
-    row_limit = 10 
-    last_creator = " "
-
-    while True:
-        receive_message = await websocket.receive_text()
-        if(receive_message == "next"):
-            if page*row_limit < total_num_rows: 
-                page += 1
-        if(receive_message == "prev"):
-            page -= 1
-            if page < 0:
-                page = 0
-
-        #TODO: what if I only load in 10 users at a time? allbeit aat the cost of
-        start = page*row_limit
-        end = start + row_limit 
-        if end > total_num_rows:
-            end = total_num_rows + 1
-        
-        for i,row in enumerate(creators_links[start:end]):
-            try:
-                name = row[0]
-                link = row[1]
-                
-                if name != " ":
-                    last_creator = name
-
+            for i,link in enumerate(links):
                 if i==0:
-                    name = last_creator
-                
-                await websocket.send_text(str({name:link}))
-            except Exception as e:
-                await websocket.send_text(str(e))
+                    rows.append((channel_name,link))
+                    continue
+                rows.append((" ",link))
+
+        except Exception as e:
+            await websocket.send_json({"message":str(e)})
+
+    with open("youtuber_latest_links.csv", "w", encoding='utf-8') as file:
+        writer = csv.writer(file)
+        for creator,links in creators_links.items():
+            link_string = "\n".join([x.rstrip() for x in links])
+            writer.writerow([creator.rstrip(),link_string.rstrip()])
+
+    total_num_rows = len(rows)
+    curr_page = 0 
+    rows_on_page = 10
+    max_page = math.floor(total_num_rows/10)
+
+    async def send_page(page: int):
+        start = page*rows_on_page
+        end = start + rows_on_page
+        rows_subset = rows[start:end]
+
+        for row in rows_subset:
+            channel_name = row[0]
+            link = row[1]
+            await websocket.send_json({"channel_name":channel_name,"link":link})
+    
+    async def clear_table():
+        await websocket.send_json({"action":"clear"})
+
+    await send_page(curr_page)
+    while True:
+        received_message = await websocket.receive_json()
+
+        action = received_message['action']
+        if action == 'next':
+            if curr_page == max_page:
+                continue 
+            curr_page += 1
+        elif action == 'prev':
+            if curr_page == 0:
+                continue 
+            curr_page -= 1
+        
+        await clear_table()
+        await send_page(curr_page)
