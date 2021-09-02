@@ -145,6 +145,7 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
 
             channel_names_ids = get_channel_names_ids(db)
             save_results_csv(video_keywords=video_keywords,channel_names_ids=channel_names_ids)
+            await websocket.send_json({"action":"clear"})
             await send_info(video_keywords=video_keywords[:10],channel_names_ids=channel_names_ids)
         else:
             await websocket.send_json({"message":"something went wrong"})
