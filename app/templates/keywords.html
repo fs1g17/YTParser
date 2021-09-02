@@ -24,9 +24,7 @@
     </div>
 </div>
 
-<p id="messages"></p>
-
-<ul id="keywords">
+<ul class="column-list" id="keywords_list" style="columns: 100px;">
 </ul>
 
 <!-- <div class="container-fluid"> -->
@@ -82,7 +80,8 @@
     var ws = new WebSocket("ws://localhost:80/keywords/ws");
     var spinner = document.getElementById("spinner"); 
     var table_body = document.getElementById("tablecontents");
-    var keyword_input = document.getElementById("keyword_input")
+    var keyword_list = document.getElementById("keywords_list");
+    var keyword_input = document.getElementById("keyword_input");
     var download_button = document.getElementById("download_button");
 
     spinner.style.visibility = "hidden";
@@ -104,6 +103,16 @@
             } else if(info.hasOwnProperty('action')){
                 if(info['action'] == 'clear'){
                     table_body.textContent = '';
+                } else if(info['action'] == 'show_keywords'){
+                    all_keywords = info['keywords']
+                    keyword_list.textContent = '';
+                    console.log("received: ", info)
+
+                    for(i=0; i<all_keywords.length; i++){
+                        var li = document.createElement("li");
+                        li.appendChild(document.createTextNode(all_keywords[i]));
+                        keyword_list.appendChild(li);
+                    }
                 }
             } else {
                 //process data here

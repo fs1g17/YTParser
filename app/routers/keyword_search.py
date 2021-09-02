@@ -95,6 +95,13 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
                 views = video.views
                 link = "youtube.com/watch?v=" + video.video_id
                 writer.writerow([sponsor,channel,publish_date,str(views),link])
+    
+    async def send_keywords():
+        all_keywords = keywords + russian_keywords
+        
+
+    all_keywords = keywords+russian_keywords
+    await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
 
     while True:
         data = await websocket.receive_json()
@@ -135,7 +142,9 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
         elif action == 'add_keyword':
             new_keyword = data['keyword']
             keywords.append(new_keyword)
-            await websocket.send_json({"message":"appended new keyword " + new_keyword})
+            #await websocket.send_json({"message":"appended new keyword " + new_keyword})
+            all_keywords = keywords+russian_keywords
+            await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
         elif action == 'search':
             video_keywords = search_keywords(keywords=keywords+russian_keywords,db=db)
             await websocket.send_json({"message":"got search"})
