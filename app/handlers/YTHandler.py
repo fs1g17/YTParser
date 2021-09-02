@@ -226,3 +226,34 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
             break 
     return all_videos
     
+def get_new_uploads(channel_id: str, youtube: googleapiclient.discovery.Resource, db_last_video_id: str, db_last_video_date: datetime):
+    playlist = get_uploads(channel_id=channel_id,youtube=youtube)
+    next_page_token = ""
+    if 'nextPageToken' in playlist:
+        next_page_token = playlist['nextPageToken']
+    videos = playlist['items']
+
+    curr_video_id = get_video_id(videos[0])
+    curr_date = parse_date(get_date(videos[0]))
+    all_videos = []
+    while(curr_video_id != db_last_video_id) and (curr_date >= db_last_video_date):
+        for video in videos:
+            curr_video_id = get_video_id(video=video)
+            curr_date = parse_date(get_date(video))
+            if (curr_video_id == db_last_video_id) or (curr_date < db_last_video_date) :
+                break
+            
+            all_videos.append(video)
+
+        if not(next_page_token == ""):
+            playlist = get_uploads_next_page(channel_id=channel_id,next_page_token=next_page_token,youtube=youtube)
+            if 'nextPageToken' in playlist:
+                next_page_token = playlist['nextPageToken']
+            else:
+                next_page_token = ""
+            videos = playlist['items']
+        else:
+            break 
+    return all_videos
+
+# what if video was deleted!!!?? -> don't let it go past last video date! simples ;)

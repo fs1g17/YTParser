@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from six import viewkeys
-from sqlalchemy.sql.expression import select
+from sqlalchemy.sql.expression import desc, select
 from starlette.routing import request_response
 from sqlalchemy import text 
 from routers import auth 
@@ -20,7 +20,7 @@ from db.database import *
 import json
 from datetime import date, datetime
 
-from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords
+from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel, update_db
 from handlers.YTHandler import *
 
 # import alembic.config
@@ -46,6 +46,22 @@ async def home(request: Request):
 
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
+
+@app.get("/updateDB")
+def update(db: Session = Depends(get_db)):
+    try:
+        messages,completed,failed = update_db(db=db)
+        return {"messages":messages,"completed":completed,"failed":failed}
+    except Exception as e:
+        return {"failed in MAIN":str(e)}
+
+@app.get("/updateCreator")
+def update_creator(channel_id: str, db: Session = Depends(get_db)):
+    try:
+        messages = update_db_channel(channel_id=channel_id,db=db)
+        return {"success":messages}
+    except Exception as e:
+        return {"failure in MAIN":str(e)}
 
 @app.get("/cacheRange")
 def cache_test(start: int, size: int, db: Session = Depends(get_db)):
@@ -114,12 +130,31 @@ def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
 
     try:
         rows = [] 
-        results = db.execute("SELECT * FROM videos WHERE channel_id='%s';"%channel_id)
-        for row in results:
-            rows.append(row)
+        results = db.query(Video).filter(Video.channel_id==channel_id).order_by(desc(Video.date)).all()
+        for video in results:
+            rows.append((video.date,video.video_id))
         return {"success!":str(rows)}
     except Exception as e:
         return {"Fail":str(e)}
+
+
+
+# @app.get("/getCreatorsVideos")
+# def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
+#     try:
+#         creator = db.query(Creator).filter(Creator.id == channel_index).first()
+#         channel_id = creator.channel_id
+#     except Exception as e:
+#         return {"Failed": str(e)}
+
+#     try:
+#         rows = [] 
+#         results = db.execute("SELECT * FROM videos WHERE channel_id='%s';"%channel_id)
+#         for row in results:
+#             rows.append(row)
+#         return {"success!":str(rows)}
+#     except Exception as e:
+#         return {"Fail":str(e)}
 
 @app.get("/TEST")
 def test(start: int, size: int, db: Session = Depends(get_db)):
