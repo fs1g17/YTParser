@@ -64,7 +64,7 @@ async def websocket_get_links(websocket: WebSocket, db: Session = Depends(get_db
                     rows.append((channel_name,link))
                     continue
                 rows.append((" ",link))
-
+            await websocket.send_json({"message":"got links for %s"%channel_name})
         except Exception as e:
             await websocket.send_json({"message":str(e)})
 

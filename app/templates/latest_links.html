@@ -60,6 +60,7 @@
     var table_body = document.getElementById("tablecontents");
     var spinner = document.getElementById("spinner"); 
     var download_button = document.getElementById("download_button");
+    var message_list = document.getElementById("messages");
     spinner.style.visibility = "visible";
     download_button.style.visibility = "hidden";
 
@@ -77,6 +78,10 @@
 
             if(received_message.hasOwnProperty('message')){
                 console.log("received: ", event.data);
+                var li = document.createElement("li");
+                li.appendChild(document.createTextNode(JSON.stringify(received_message)));
+                message_list.textContent = '';
+                message_list.appendChild(li);
             } else if(received_message.hasOwnProperty('action')){
                 if(received_message['action'] == 'clear'){
                     table_body.textContent = '';
