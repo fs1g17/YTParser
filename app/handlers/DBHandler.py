@@ -152,7 +152,7 @@ def cache_range(start: int, size: int, db: Session):
 def search_keywords(keywords: List[str], db: Session) -> List[Tuple[Video,List[str]]]:
     videos = []
 
-    for video in db.query(Video).all():
+    for video in db.query(Video).order_by(desc(Video.date)).all():
         description = video.description
         matched_keywords = []
         for keyword in keywords:
