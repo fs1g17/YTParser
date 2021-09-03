@@ -12,9 +12,11 @@
 
 <form>
     <div class="form-group row">
-      <label for="inputEmail3" class="col-sm-2 col-form-label">Follow the link:</label>
+      <label for="authLinkBox" class="col-sm-2 col-form-label">Follow the link:</label>
       <div class="col-sm-10">
-        <input type="text" readonly class="form-control-plaintext" id="authLinkBox" value={{link}}>
+        <button type="button" class="btn btn-primary" id="authLinkBox">
+            <a href={{link}} target="_blank">Log in with Google</a>
+        </button>
       </div>
     </div>
     <div class="form-group row">
@@ -22,12 +24,10 @@
             <input class="form-control" id="authCodeBox" placeholder="Paste Code in Here!">
         </div>
         <div class="col-auto">
-            <button type="button" class="btn btn-primary" id="ok">OK</button>
+            <button type="button" class="btn btn-primary" id="ok" onclick="submitFunction()">OK</button>
         </div>
     </div>
 </form>
-
-<!-- add this to button 'onclick="submitFunction()"' -->
 
 {% endblock %}
 
@@ -41,13 +41,8 @@
         window.location.replace(new_url);
     }
 
-    document.getElementById("ok").onclick = submitFunction;
-</script>
-
-<script>
     function getCode(){
         return document.getElementById("authCodeBox").value
     }
 </script>
-
 {% endblock %}

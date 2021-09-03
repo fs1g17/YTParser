@@ -22,7 +22,14 @@
             <button type="button" class="fa fa-download btn btn-primary" id="download_button" onclick="download(event)"></button>
         </div>
     </div>
+    <div class="row">
+        <div class="col-auto">
+            <p id="server_message"></p>
+        </div>
+    </div>
 </div>
+
+
 
 <ul class="column-list" id="keywords_list" style="columns: 100px;">
 </ul>
@@ -82,6 +89,7 @@
     var table_body = document.getElementById("tablecontents");
     var keyword_list = document.getElementById("keywords_list");
     var keyword_input = document.getElementById("keyword_input");
+    var server_message = document.getElementById("server_message");
     var download_button = document.getElementById("download_button");
 
     spinner.style.visibility = "hidden";
@@ -98,8 +106,11 @@
     ws.onmessage = function(event) {
         try{
             info = JSON.parse(event.data);
-            if(info.hasOwnProperty('message')){
-                console.log("received: ", event.data);
+            if(info.hasOwnProperty('message') && info['show']){
+                console.log("received: ", info['message']);
+                server_message.textContent = info['message'];
+            } else if(info.hasOwnProperty('message')){
+                console.log("received: ", info['message'])
             } else if(info.hasOwnProperty('action')){
                 if(info['action'] == 'clear'){
                     table_body.textContent = '';

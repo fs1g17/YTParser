@@ -2,10 +2,11 @@ import csv
 import os
 import math
 import asyncio
+from sqlalchemy.sql.expression import update
 from starlette.responses import FileResponse
 from starlette.websockets import WebSocket
 from handlers.YTHandler import *
-from handlers.DBHandler import search_keywords, get_channel_names_ids
+from handlers.DBHandler import search_keywords, get_channel_names_ids, update_db
 from fastapi import Request, APIRouter, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -98,8 +99,16 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
     
     async def send_keywords():
         all_keywords = keywords + russian_keywords
-        
 
+    async def send_message(msg: str):
+        await websocket.send_json({"message":msg,"show":True})
+
+    async def send_log(msg: str):
+        await websocket.send_json({"message":msg,"show":False})
+
+    async def clear_table():
+        await websocket.send_json({"action":"clear"})
+        
     all_keywords = keywords+russian_keywords
     await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
 
@@ -107,7 +116,7 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
         data = await websocket.receive_json()
         action = data['action']
         if action == 'next':
-            await websocket.send_json({"message":"got next"})
+            await send_log("got next")
 
             if video_keywords == None:
                 continue 
@@ -123,10 +132,10 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
                 end = start + 10
                 subsection = video_keywords[start:end]
 
-            await websocket.send_json({"action":"clear"})
+            await clear_table()
             await send_info(video_keywords=subsection,channel_names_ids=channel_names_ids)
         elif action == 'prev':
-            await websocket.send_json({"message":"got prev"})
+            await send_log("got prev")
 
             if video_keywords == None:
                 continue 
@@ -137,24 +146,30 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
             start = page*10 
             end = start + 10
 
-            await websocket.send_json({"action":"clear"})
+            await clear_table()
             await send_info(video_keywords=video_keywords[start:end],channel_names_ids=channel_names_ids)
         elif action == 'add_keyword':
             new_keyword = data['keyword']
             keywords.append(new_keyword)
-            #await websocket.send_json({"message":"appended new keyword " + new_keyword})
             all_keywords = keywords+russian_keywords
             await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
         elif action == 'search':
+            await send_message("updating database")
+            messages,completed,failed = update_db(db)
+            await send_log("messages: " + str(messages))
+            await send_log("completed: " + str(completed))
+            await send_log("failed: " + str(failed))
+            await send_message("database up to date!")
+
             video_keywords = search_keywords(keywords=keywords+russian_keywords,db=db)
-            await websocket.send_json({"message":"got search"})
+            await send_message("got search")
 
             page = 0
             max_page = math.floor(len(video_keywords)/10)
 
             channel_names_ids = get_channel_names_ids(db)
             save_results_csv(video_keywords=video_keywords,channel_names_ids=channel_names_ids)
-            await websocket.send_json({"action":"clear"})
+            await clear_table()
             await send_info(video_keywords=video_keywords[:10],channel_names_ids=channel_names_ids)
         else:
-            await websocket.send_json({"message":"something went wrong"})
+            await send_message("something went wrong")
