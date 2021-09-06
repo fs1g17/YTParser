@@ -188,13 +188,6 @@ def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.dis
         messages.append("failed: " + str(e))
         return messages
 
-    # try:
-    #     youtube = get_auth_service()
-    #     messages.append("got youtube service!")
-    # except Exception as e:
-    #     messages.append("failed to get youtube service: " + str(e))
-    #     return messages
-
     try:
         new_videos = get_new_uploads(channel_id=channel_id,
                                      youtube=youtube,
@@ -238,31 +231,32 @@ def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.dis
     messages.append("completed updating for: " + str(channel_id))
     return messages
 
-def update_db(db: Session):
-    messages = []
-    completed = []
-    failed = []
-    channel_names_ids = get_channel_names_ids(db)
+#------------ MOVED TO keyword_search.py in /app/routers/ so that live updates could be reflected on the page! ------------------
+# def update_db(db: Session):
+#     messages = []
+#     completed = []
+#     failed = []
+#     channel_names_ids = get_channel_names_ids(db)
 
-    try:
-        youtube = get_auth_service()
-        messages.append("got youtube service")
-    except Exception as e:
-        messages.append("failed to get youtube service: " + str(e))
-        return messages 
+#     try:
+#         youtube = get_auth_service()
+#         messages.append("got youtube service")
+#     except Exception as e:
+#         messages.append("failed to get youtube service: " + str(e))
+#         return messages 
     
-    for channel_id,channel_name in channel_names_ids.items():
-        channel_exists = verify_channel_with_youtube(channel_id=channel_id,youtube=youtube)
+#     for channel_id,channel_name in channel_names_ids.items():
+#         channel_exists = verify_channel_with_youtube(channel_id=channel_id,youtube=youtube)
 
-        if not(channel_exists):
-            failed.append("channel %s %s doesn't exist on youtube anymore!"%(channel_name,channel_id))
-            continue
+#         if not(channel_exists):
+#             failed.append("channel %s %s doesn't exist on youtube anymore!"%(channel_name,channel_id))
+#             continue
         
-        channel_messages = update_db_channel(db=db,youtube=youtube,channel_id=channel_id)
-        messages += channel_messages
-        completed.append(channel_name)
+#         channel_messages = update_db_channel(db=db,youtube=youtube,channel_id=channel_id)
+#         messages += channel_messages
+#         completed.append(channel_name)
     
-    return messages,completed,failed 
+#     return messages,completed,failed 
 
 
 

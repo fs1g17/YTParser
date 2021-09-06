@@ -20,7 +20,7 @@ from db.database import *
 import json
 from datetime import date, datetime
 
-from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel, update_db
+from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel
 from handlers.YTHandler import *
 
 # import alembic.config
@@ -42,100 +42,100 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     data = "POOPY"
-    return templates.TemplateResponse("page.html", {"request": request, "data": data})
+    return templates.TemplateResponse("home_page.html", {"request": request, "data": data})
 
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
-@app.get("/updateDB")
-def update(db: Session = Depends(get_db)):
-    try:
-        messages,completed,failed = update_db(db=db)
-        return {"messages":messages,"completed":completed,"failed":failed}
-    except Exception as e:
-        return {"failed in MAIN":str(e)}
+# @app.get("/updateDB")
+# def update(db: Session = Depends(get_db)):
+#     try:
+#         messages,completed,failed = update_db(db=db)
+#         return {"messages":messages,"completed":completed,"failed":failed}
+#     except Exception as e:
+#         return {"failed in MAIN":str(e)}
 
-@app.get("/updateCreator")
-def update_creator(channel_id: str, db: Session = Depends(get_db)):
-    try:
-        messages = update_db_channel(channel_id=channel_id,db=db)
-        return {"success":messages}
-    except Exception as e:
-        return {"failure in MAIN":str(e)}
+# @app.get("/updateCreator")
+# def update_creator(channel_id: str, db: Session = Depends(get_db)):
+#     try:
+#         messages = update_db_channel(channel_id=channel_id,db=db)
+#         return {"success":messages}
+#     except Exception as e:
+#         return {"failure in MAIN":str(e)}
 
-@app.get("/cacheRange")
-def cache_test(start: int, size: int, db: Session = Depends(get_db)):
-    try:
-        messages = cache_range(start=start,size=size,db=db)
-        db.commit()
-        return {"success!":str(messages['general']),"failed":str(messages['failed']),"completed":str(messages['completed'])}
-    except Exception as e:
-        return {"failure in main":str(e)}
+# @app.get("/cacheRange")
+# def cache_test(start: int, size: int, db: Session = Depends(get_db)):
+#     try:
+#         messages = cache_range(start=start,size=size,db=db)
+#         db.commit()
+#         return {"success!":str(messages['general']),"failed":str(messages['failed']),"completed":str(messages['completed'])}
+#     except Exception as e:
+#         return {"failure in main":str(e)}
 
-@app.get("/checkRange")
-def cache_check(start: int, size: int, db: Session = Depends(get_db)):
-    try:
-        creators = get_creators_range(start=start,size=size,db=db)
-        done = []
-        for creator in creators:
-            channel_name = creator.channel_name
-            id = creator.id
-            done.append([id,channel_name])
-        return {"success!":str(done)}
-    except Exception as e:
-        return {"Main: failed ":str(e)}
+# @app.get("/checkRange")
+# def cache_check(start: int, size: int, db: Session = Depends(get_db)):
+#     try:
+#         creators = get_creators_range(start=start,size=size,db=db)
+#         done = []
+#         for creator in creators:
+#             channel_name = creator.channel_name
+#             id = creator.id
+#             done.append([id,channel_name])
+#         return {"success!":str(done)}
+#     except Exception as e:
+#         return {"Main: failed ":str(e)}
 
-@app.get("/topCreator")
-def get_top(limit: int, db: Session = Depends(get_db)):
-    try:
-        rows = [] 
-        results = db.query(Creator).filter(text("id<%s"%limit))
+# @app.get("/topCreator")
+# def get_top(limit: int, db: Session = Depends(get_db)):
+#     try:
+#         rows = [] 
+#         results = db.query(Creator).filter(text("id<%s"%limit))
 
-        for row in results:
-            rows.append(row)
-        return {"rows":rows}
-    except Exception as e:
-        return {"error":str(e)}
+#         for row in results:
+#             rows.append(row)
+#         return {"rows":rows}
+#     except Exception as e:
+#         return {"error":str(e)}
 
-@app.get("/topVideos")
-def get_top_vids(limit: int, db: Session = Depends(get_db)):
-    try:
-        rows = [] 
-        results = db.query(Video).limit(limit).all()
+# @app.get("/topVideos")
+# def get_top_vids(limit: int, db: Session = Depends(get_db)):
+#     try:
+#         rows = [] 
+#         results = db.query(Video).limit(limit).all()
 
-        for row in results:
-            rows.append(row)
-        return {"rows":rows}
-    except Exception as e:
-        return {"error":str(e)}
+#         for row in results:
+#             rows.append(row)
+#         return {"rows":rows}
+#     except Exception as e:
+#         return {"error":str(e)}
 
-@app.get("/getSlice")
-def get_slice(start: int, size: int, db: Session = Depends(get_db)):
-    try:
-        rows = []
-        results = db.query(Creator).filter(text("id >= %s AND id < %s"%(start,start+size)))
-        for row in results:
-            rows.append(row)
-        return {"rows":rows}
-    except Exception as e:
-        return {"error":str(e)}
+# @app.get("/getSlice")
+# def get_slice(start: int, size: int, db: Session = Depends(get_db)):
+#     try:
+#         rows = []
+#         results = db.query(Creator).filter(text("id >= %s AND id < %s"%(start,start+size)))
+#         for row in results:
+#             rows.append(row)
+#         return {"rows":rows}
+#     except Exception as e:
+#         return {"error":str(e)}
 
-@app.get("/getCreatorsVideos")
-def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
-    try:
-        creator = db.query(Creator).filter(Creator.id == channel_index).first()
-        channel_id = creator.channel_id
-    except Exception as e:
-        return {"Failed": str(e)}
+# @app.get("/getCreatorsVideos")
+# def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
+#     try:
+#         creator = db.query(Creator).filter(Creator.id == channel_index).first()
+#         channel_id = creator.channel_id
+#     except Exception as e:
+#         return {"Failed": str(e)}
 
-    try:
-        rows = [] 
-        results = db.query(Video).filter(Video.channel_id==channel_id).order_by(desc(Video.date)).all()
-        for video in results:
-            rows.append((video.date,video.video_id))
-        return {"success!":str(rows)}
-    except Exception as e:
-        return {"Fail":str(e)}
+#     try:
+#         rows = [] 
+#         results = db.query(Video).filter(Video.channel_id==channel_id).order_by(desc(Video.date)).all()
+#         for video in results:
+#             rows.append((video.date,video.video_id))
+#         return {"success!":str(rows)}
+#     except Exception as e:
+#         return {"Fail":str(e)}
 
 
 
