@@ -5,3 +5,5 @@ shit.ipynb
 app/handlers/DBHandler_old.py
 app/handlers/YTHandler_old.py
 client_secrets.json
+YTHandler_old.py
+DBHandler_old.py
