@@ -1,6 +1,7 @@
 from hashlib import new
 from sqlalchemy.orm import query
 from sqlalchemy.sql.expression import desc, select
+from starlette.websockets import WebSocket
 from .authentication import *
 from .YTHandler import *
 from datetime import date, datetime
@@ -168,7 +169,14 @@ def get_channel_names_ids(db: Session) -> dict:
     for creator in db.query(Creator).all():
         channel_name = creator.channel_name
         channel_id = creator.channel_id
+        channel_names_ids[channel_id] = channel_name
+    return channel_names_ids
 
+def get_channel_names_ids_offset(db: Session, start: int) -> dict:
+    channel_names_ids = {}
+    for creator in db.query(Creator).offset(start).all():
+        channel_name = creator.channel_name
+        channel_id = creator.channel_id
         channel_names_ids[channel_id] = channel_name
     return channel_names_ids
 
@@ -231,39 +239,43 @@ def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.dis
     messages.append("completed updating for: " + str(channel_id))
     return messages
 
-#------------ MOVED TO keyword_search.py in /app/routers/ so that live updates could be reflected on the page! ------------------
-# def update_db(db: Session):
-#     messages = []
-#     completed = []
-#     failed = []
-#     channel_names_ids = get_channel_names_ids(db)
+async def send_message(msg: str, websocket: WebSocket):
+    await websocket.send_json({"message":msg,"show":True})
 
-#     try:
-#         youtube = get_auth_service()
-#         messages.append("got youtube service")
-#     except Exception as e:
-#         messages.append("failed to get youtube service: " + str(e))
-#         return messages 
+async def send_log(msg: str, websocket: WebSocket):
+    await websocket.send_json({"message":msg,"show":False})
+
+async def update_db(db: Session, websocket: WebSocket):
+    messages = []
+    completed = []
+    failed = []
+    channel_names_ids = get_channel_names_ids(db=db)
+
+    try:
+        youtube = get_auth_service()
+        messages.append("got youtube service")
+        await send_message(msg="got youtube service!", websocket=websocket)
+    except Exception as e1:
+        messages.append("failed to get youtube service: " + str(e1))
+        await send_message(msg="failed to get youtube service!", websocket=websocket)
+        return messages 
     
-#     for channel_id,channel_name in channel_names_ids.items():
-#         channel_exists = verify_channel_with_youtube(channel_id=channel_id,youtube=youtube)
+    for channel_id,channel_name in channel_names_ids.items():
+        channel_exists = verify_channel_with_youtube(channel_id=channel_id,youtube=youtube)
 
-#         if not(channel_exists):
-#             failed.append("channel %s %s doesn't exist on youtube anymore!"%(channel_name,channel_id))
-#             continue
+        if not(channel_exists):
+            failed.append("channel %s %s doesn't exist on youtube anymore!"%(channel_name,channel_id))
+            continue
         
-#         channel_messages = update_db_channel(db=db,youtube=youtube,channel_id=channel_id)
-#         messages += channel_messages
-#         completed.append(channel_name)
+        try:
+            channel_messages = update_db_channel(db=db,youtube=youtube,channel_id=channel_id)
+            messages += channel_messages
+            completed.append(channel_name)
+            await send_message(msg="retrieved info for %s"%channel_name, websocket=websocket)
+        except Exception as e2:
+            failed.append(("failed to update for %s: "%channel_name) + str(e2))
+            await send_log(msg="FAILURE: %s - "%channel_name + str(e2), websocket=websocket)
     
-#     return messages,completed,failed 
-
-
-
-
-
-# 0.) Verify channel exists!
-# 1.) check if latest video date matches with latest video on YouTube
-# 2.) if it doesn't match, get videos after latest video in db 
-# 3.) cache all those videos!
-# N.B: check the channel exists!
+    await send_log(msg="messages: " + str(messages), websocket=websocket)
+    await send_log(msg="completed: " + str(completed), websocket=websocket)
+    await send_log(msg="failed: " + str(failed), websocket=websocket)

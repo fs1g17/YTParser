@@ -6,7 +6,7 @@ from sqlalchemy.sql.expression import update
 from starlette.responses import FileResponse
 from starlette.websockets import WebSocket
 from handlers.YTHandler import *
-from handlers.DBHandler import search_keywords, get_channel_names_ids, update_db_channel
+from handlers.DBHandler import search_keywords, get_channel_names_ids, update_db
 from fastapi import Request, APIRouter, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -74,49 +74,6 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
 
     video_keywords = None
 
-    def save_results_csv(video_keywords: List[Tuple[Video,List[str]]],channel_names_ids: dict):
-        with open("youtuber_keyword_search.csv", "w", encoding='utf-8') as file:
-            writer = csv.writer(file)
-
-            for video,sponsors in video_keywords:
-                sponsor = sponsors
-                channel = channel_names_ids[video.channel_id]
-                publish_date = str(video.date)
-                views = video.views
-                link = "youtube.com/watch?v=" + video.video_id
-                writer.writerow([sponsor,channel,publish_date,str(views),link])
-
-    async def update_db(db: Session):
-        messages = []
-        completed = []
-        failed = []
-        channel_names_ids = get_channel_names_ids(db)
-
-        try:
-            youtube = get_auth_service()
-            messages.append("got youtube service")
-            await send_message("got youtube service!")
-        except Exception as e:
-            messages.append("failed to get youtube service: " + str(e))
-            await send_message("failed to get youtube service!")
-            return messages 
-        
-        for channel_id,channel_name in channel_names_ids.items():
-            channel_exists = verify_channel_with_youtube(channel_id=channel_id,youtube=youtube)
-
-            if not(channel_exists):
-                failed.append("channel %s %s doesn't exist on youtube anymore!"%(channel_name,channel_id))
-                continue
-            
-            channel_messages = update_db_channel(db=db,youtube=youtube,channel_id=channel_id)
-            messages += channel_messages
-            completed.append(channel_name)
-            await send_message("retrieved info for %s"%channel_name)
-        
-        await send_log("messages: " + str(messages))
-        await send_log("completed: " + str(completed))
-        await send_log("failed: " + str(failed))
-    
     # this coroutine sends each pieace of data one by one through the websocket
     async def send_info(video_keywords: List[Tuple[Video,List[str]]],channel_names_ids: dict):
         for video,sponsors in video_keywords:
@@ -135,9 +92,24 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
 
     async def clear_table():
         await websocket.send_json({"action":"clear"})
+
+    async def send_keywords():
+        all_keywords = keywords+russian_keywords
+        await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
+
+    def save_results_csv(video_keywords: List[Tuple[Video,List[str]]],channel_names_ids: dict):
+        with open("youtuber_keyword_search.csv", "w", encoding='utf-8') as file:
+            writer = csv.writer(file)
+
+            for video,sponsors in video_keywords:
+                sponsor = sponsors
+                channel = channel_names_ids[video.channel_id]
+                publish_date = str(video.date)
+                views = video.views
+                link = "youtube.com/watch?v=" + video.video_id
+                writer.writerow([sponsor,channel,publish_date,str(views),link])
         
-    all_keywords = keywords+russian_keywords
-    await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
+    await send_keywords()
 
     while True:
         data = await websocket.receive_json()
@@ -178,11 +150,10 @@ async def websocket_get_keywords(websocket: WebSocket, db: Session = Depends(get
         elif action == 'add_keyword':
             new_keyword = data['keyword']
             keywords.append(new_keyword)
-            all_keywords = keywords+russian_keywords
-            await websocket.send_json({"action":"show_keywords","keywords":all_keywords})
+            await send_keywords()
         elif action == 'search':
             await send_message("updating database")
-            await update_db(db)
+            await update_db(db=db,websocket=websocket)
             await send_message("database up to date!")
 
             video_keywords = search_keywords(keywords=keywords+russian_keywords,db=db)
