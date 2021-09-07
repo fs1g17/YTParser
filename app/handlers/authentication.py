@@ -29,20 +29,14 @@ def get_auth_service():
             pickle.dump(credentials, f)
     return googleapiclient.discovery.build(api_service_name, api_version, credentials = credentials)
 
-def auth_on_click():
-    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes, redirect_uri="http://[::1]:80/authorise/autoCode")
-    url = flow.authorization_url()
-    return url,flow 
-
-def fetch_credentials(flow):
-    flow.fetch_token()
-    return flow.credentials
-
 # returns link for user to follow
 def get_auth_service_link():
-    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes, redirect_uri="urn:ietf:wg:oauth:2.0:oob")
+    return get_auth_service_link_redirect(redirect_uri="http://[::1]:80/authorise/auto")
+
+def get_auth_service_link_redirect(redirect_uri: str):
+    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes, redirect_uri=redirect_uri)
     url = flow.authorization_url()
-    return url,flow 
+    return url,flow
 
 def get_credentials(flow,code):
     flow.fetch_token(code=code)
