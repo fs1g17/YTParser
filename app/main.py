@@ -1,5 +1,6 @@
 from webbrowser import get
-from fastapi import FastAPI, Request, Depends, WebSocket
+from fastapi import FastAPI, Request, Depends, WebSocket, File
+from fastapi.datastructures import UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -47,6 +48,38 @@ async def home(request: Request):
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
+@app.get("/uploadCreatorList")
+async def get_creators_list(db: Session = Depends(get_db), file: UploadFile = File(...)):
+    try:
+        with open(file, 'r', encoding='utf-8') as infile:
+            csvreader = csv.reader(infile)
+
+            num = 1
+            for row in csvreader:
+                channel_name = row[0]
+                channel_id = row[2]
+                to_add = Creator(
+                    id=num,
+                    channel_name=channel_name,
+                    channel_id=channel_id
+                )
+                db.add(to_add)
+            db.commit()
+        return {"success!":"added all creators to db"}
+    except Exception as e:
+        return {"failure":"error: %s"%str(e)}
+
+@app.get("/showAllCreators")
+async def show_all_creators(db: Session = Depends(get_db)):
+    try:
+        results = db.query(Creator).all()
+        youtubers = []
+        
+        for ytb in results:
+            youtubers.append([ytb[0],ytb[1],ytb[2]])
+        return {"success!":youtubers}
+    except Exception as e:
+        return {"failure":str(e)}
 # @app.get("/updateDB")
 # def update(db: Session = Depends(get_db)):
 #     try:
