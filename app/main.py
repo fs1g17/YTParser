@@ -51,20 +51,20 @@ app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keyword
 @app.post("/uploadCreatorList")
 async def get_creators_list(db: Session = Depends(get_db), file: UploadFile = File(...)):
     try:
-        contents = await file.read()
-        csvreader = csv.reader(contents)
+        with open(file.file, 'r', encoding='utf-8') as infile:
+            csvreader = csv.reader(infile)
 
-        num = 1
-        for row in csvreader:
-            channel_name = row[0]
-            channel_id = row[2]
-            to_add = Creator(
-                id=num,
-                channel_name=channel_name,
-                channel_id=channel_id
-            )
-            db.add(to_add)
-        db.commit()
+            num = 1
+            for row in csvreader:
+                channel_name = row[0]
+                channel_id = row[2]
+                to_add = Creator(
+                    id=num,
+                    channel_name=channel_name,
+                    channel_id=channel_id
+                )
+                db.add(to_add)
+            db.commit()
         return {"success!":"added all creators to db"}
     except Exception as e:
         return {"failure":"error: %s"%str(e)}
