@@ -215,8 +215,12 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
     all_videos = []
     while(curr_date >= end_date):
         for video in videos:
-            if get_title(video=video) == 'Deleted video':
-                continue 
+            try:
+                if get_title(video=video) == 'Deleted video':
+                    continue 
+            except:
+                print(video)
+                continue
 
             if curr_date > start_date:
                 continue
