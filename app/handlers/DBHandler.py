@@ -114,7 +114,10 @@ def cache_range(start: int, size: int, db: Session):
         except Exception as e3:
             print("DBHANDLER EXCEPTION")
             print(e3)
-            #e3 = str(e3).replace("\r","").replace("\n","")
+            print("----------------------------HERE------------------------------")
+            print(e3)
+            print(str(e3).replace("\r","").replace("\n",""))
+            #e3 = 
             failure = {'channel_id':channel_id,"exception":str(e3)}
             failed.append("DBHandler: Failed " + str(failure))
             continue 
