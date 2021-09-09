@@ -112,12 +112,6 @@ def cache_range(start: int, size: int, db: Session):
             now = datetime.now()
             videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=-1,month=0,day=0)
         except Exception as e3:
-            print("DBHANDLER EXCEPTION")
-            print(e3)
-            print("----------------------------HERE------------------------------")
-            print(e3)
-            print(str(e3).replace("\r","").replace("\n",""))
-            #e3 = 
             failure = {'channel_id':channel_id,"exception":str(e3)}
             failed.append("DBHandler: Failed " + str(failure))
             continue 
