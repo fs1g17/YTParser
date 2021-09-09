@@ -1,3 +1,4 @@
+from app.handlers.DBHandler import remove_creator_videos
 from webbrowser import get
 from fastapi import FastAPI, Request, Depends, WebSocket, File
 from fastapi.datastructures import UploadFile
@@ -102,6 +103,11 @@ async def show_all_creators(db: Session = Depends(get_db)):
 #     except Exception as e:
 #         return {"failure in MAIN":str(e)}
 
+# @app.get("/cacheCreator")
+# def cache_creator(channel_id: str, db: Session = Depends(get_db))
+#     try:
+
+
 @app.get("/cacheRange")
 def cache_test(start: int, size: int, db: Session = Depends(get_db)):
     try:
@@ -123,6 +129,15 @@ def cache_check(start: int, size: int, db: Session = Depends(get_db)):
         return {"success!":str(done)}
     except Exception as e:
         return {"Main: failed ":str(e)}
+
+@app.get("/deleteCreatorsVideos")
+def del_videos(channel_id: str, db: Session = Depends(get_db)):
+    try:
+        remove_creator_videos(channel_id=channel_id,db=db)
+        db.commit()
+        return {"success":"whoop whoop"}
+    except Exception as e:
+        return {"failure":":P"}
 
 # @app.get("/topCreator")
 # def get_top(limit: int, db: Session = Depends(get_db)):
