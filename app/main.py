@@ -49,7 +49,7 @@ async def home(request: Request):
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
-@app.get("sqlQuery")
+@app.get("/sqlQuery")
 def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
     try:
         results = db.execute(query)
