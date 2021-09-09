@@ -15,7 +15,6 @@ from routers import keyword_search
 from handlers.gui import *
 import csv 
 import asyncio 
-import TextIOWrapper
 
 from sqlalchemy.orm import Session
 from db.database import *
