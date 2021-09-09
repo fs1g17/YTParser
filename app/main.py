@@ -49,9 +49,9 @@ app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
 @app.post("/uploadCreatorList")
-async def get_creators_list(db: Session = Depends(get_db), file: UploadFile = File(...)):
+async def get_creators_list(db: Session = Depends(get_db), file: bytes = File(...)):
     try:
-        with open(f'{file.filename}', 'r', encoding='utf-8') as infile:
+        with open(file, 'r', encoding='utf-8') as infile:
             csvreader = csv.reader(infile)
 
             num = 1
