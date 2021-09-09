@@ -11,11 +11,15 @@ filters = ['vk','music','instagram','tiktok','youtube']
 #--------------- VIDEO FUNCTIONS -------------------------
 # N.B: YouTube API returns query result as a dictionary 
 # All of these functions are helper functions to unwrap data 
+
+#raise KeyError('video publish date missing, video could have been DELETED: %s'%str(video))
 def get_date(video: dict) -> str:
     content_details = video['contentDetails']
 
     if not('videoPublishedAt' in content_details):
-        raise KeyError('video publish date missing in: %s'%str(video))
+        snippet = content_details['snippet']
+        date = snippet['videoPublishedAt']
+        return date
 
     date = content_details['videoPublishedAt']
     return date 
@@ -211,6 +215,9 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
     all_videos = []
     while(curr_date >= end_date):
         for video in videos:
+            if get_title(video=video) == 'Deleted video':
+                continue 
+
             if curr_date > start_date:
                 continue
             curr_date = parse_date(get_date(video))
@@ -229,7 +236,9 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
         else:
             break 
     return all_videos
-    
+
+#TODO: implement check here!
+#if get_title(video=video) == 'Deleted video':
 def get_new_uploads(channel_id: str, youtube: googleapiclient.discovery.Resource, db_last_video_id: str, db_last_video_date: datetime):
     playlist = get_uploads(channel_id=channel_id,youtube=youtube)
     next_page_token = ""
