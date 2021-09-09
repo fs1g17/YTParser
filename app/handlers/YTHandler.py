@@ -13,6 +13,10 @@ filters = ['vk','music','instagram','tiktok','youtube']
 # All of these functions are helper functions to unwrap data 
 def get_date(video: dict) -> str:
     content_details = video['contentDetails']
+
+    if not('videoPublishedAt' in content_details):
+        raise KeyError('video publish date missing in: %s'%str(video))
+
     date = content_details['videoPublishedAt']
     return date 
 
