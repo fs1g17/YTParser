@@ -17,7 +17,7 @@ def get_date(video: dict) -> str:
     content_details = video['contentDetails']
 
     if not('videoPublishedAt' in content_details):
-        snippet = content_details['snippet']
+        snippet = video['snippet']
         date = snippet['videoPublishedAt']
         return date
 
