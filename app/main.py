@@ -1,4 +1,3 @@
-from app.handlers.DBHandler import remove_creator_videos
 from webbrowser import get
 from fastapi import FastAPI, Request, Depends, WebSocket, File
 from fastapi.datastructures import UploadFile
@@ -23,7 +22,7 @@ from db.database import *
 import json
 from datetime import date, datetime
 
-from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel
+from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel, remove_creator_videos
 from handlers.YTHandler import *
 
 # import alembic.config
