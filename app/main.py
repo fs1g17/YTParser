@@ -85,6 +85,7 @@ async def show_all_creators(db: Session = Depends(get_db)):
         return {"success!":youtubers}
     except Exception as e:
         return {"failure":str(e)}
+
 # @app.get("/updateDB")
 # def update(db: Session = Depends(get_db)):
 #     try:
@@ -101,27 +102,27 @@ async def show_all_creators(db: Session = Depends(get_db)):
 #     except Exception as e:
 #         return {"failure in MAIN":str(e)}
 
-# @app.get("/cacheRange")
-# def cache_test(start: int, size: int, db: Session = Depends(get_db)):
-#     try:
-#         messages = cache_range(start=start,size=size,db=db)
-#         db.commit()
-#         return {"success!":str(messages['general']),"failed":str(messages['failed']),"completed":str(messages['completed'])}
-#     except Exception as e:
-#         return {"failure in main":str(e)}
+@app.get("/cacheRange")
+def cache_test(start: int, size: int, db: Session = Depends(get_db)):
+    try:
+        messages = cache_range(start=start,size=size,db=db)
+        db.commit()
+        return {"success!":str(messages['general']),"failed":str(messages['failed']),"completed":str(messages['completed'])}
+    except Exception as e:
+        return {"failure in main":str(e)}
 
-# @app.get("/checkRange")
-# def cache_check(start: int, size: int, db: Session = Depends(get_db)):
-#     try:
-#         creators = get_creators_range(start=start,size=size,db=db)
-#         done = []
-#         for creator in creators:
-#             channel_name = creator.channel_name
-#             id = creator.id
-#             done.append([id,channel_name])
-#         return {"success!":str(done)}
-#     except Exception as e:
-#         return {"Main: failed ":str(e)}
+@app.get("/checkRange")
+def cache_check(start: int, size: int, db: Session = Depends(get_db)):
+    try:
+        creators = get_creators_range(start=start,size=size,db=db)
+        done = []
+        for creator in creators:
+            channel_name = creator.channel_name
+            id = creator.id
+            done.append([id,channel_name])
+        return {"success!":str(done)}
+    except Exception as e:
+        return {"Main: failed ":str(e)}
 
 # @app.get("/topCreator")
 # def get_top(limit: int, db: Session = Depends(get_db)):
