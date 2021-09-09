@@ -49,6 +49,23 @@ async def home(request: Request):
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
+@app.get("/showTable")
+def show_table_limit(limit: int = 10, table: str = 'videos', db: Session = Depends(get_db)):
+    try:
+        if table.lower() == 'videos':
+            results = db.query(Video).limit(limit).all()
+        elif table.lower() == 'creators':
+            results = db.query(Creator).limit(limit).all()
+        else:
+            return {"Failure":"No such table %s"%table}
+        
+        rows = []
+        for row in results:
+            rows.append(row)
+        return {"success":rows}
+    except Exception as e:
+        return {"failure":str(e)}
+
 @app.post("/uploadCreatorList")
 async def get_creators_list(db: Session = Depends(get_db), file: UploadFile = File(...)):
     try:
