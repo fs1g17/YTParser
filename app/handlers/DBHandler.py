@@ -141,8 +141,12 @@ def cache_range(start: int, size: int, db: Session):
             except Exception as e4:
                 failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e4)}
                 failed.append("DBHandler: Failed to add video. " + str(failure))
-        db.commit()
-        completed.append("completed caching for: " + str(channel_name))
+        try:
+            db.commit()
+            completed.append("completed caching for: " + str(channel_name))
+        except Exception as e5:
+            failure = {'channel_name':channel_name,'channel_id':channel_id,'exception':str(e5)}
+            failed.append("DBHandler: Failed to commit videos to db: " + str(failed))
     return messages
 
     # TODO: update cache function!
