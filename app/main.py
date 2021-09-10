@@ -1,30 +1,18 @@
-from app.handlers.DBHandler import get_channel_names_ids
-from webbrowser import get
-from fastapi import FastAPI, Request, Depends, WebSocket, File
-from fastapi.datastructures import UploadFile
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from six import viewkeys
-from sqlalchemy.sql.expression import desc, select
-from starlette.routing import request_response
-from sqlalchemy import text 
 from routers import auth 
-from routers import creators as youtubers
 from routers import latest_links
 from routers import keyword_search
-from handlers.gui import *
-import csv 
-import asyncio 
-from io import TextIOWrapper
+from routers import creators as youtubers
+
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request, Depends
+from fastapi.templating import Jinja2Templates
 
 from sqlalchemy.orm import Session
-from db.database import *
-import json
-from datetime import date, datetime
+from sqlalchemy.sql.expression import desc
 
-from handlers.DBHandler import cache, get_creators_range, cache_range, search_keywords, update_db_channel, remove_creator_videos
-from handlers.YTHandler import *
+from db.database import get_db, Creator, Video
+from handlers.DBHandler import get_creators_range, cache_range, get_channel_names_ids
 
 # import alembic.config
 # alembicArgs = [
