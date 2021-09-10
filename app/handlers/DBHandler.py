@@ -171,7 +171,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
                 )
 
                 db.add(to_add)
-                add_completed(msg="Added video",channel_name=channel_name,channel_id=channel_id,channel_id=video_id)
+                add_completed(msg="Added video",channel_name=channel_name,channel_id=channel_id,video_id=video_id)
             except Exception as e4:
                 curr_msg = "DBHandler: Failed to add video " + str(e4)
                 add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
