@@ -203,6 +203,23 @@ def cache_check(start: int, size: int, db: Session = Depends(get_db)):
     except Exception as e:
         return {"Main: failed ":str(e)}
 
+@app.get("/deleteVideosRange")
+def del_range(db: Session = Depends(get_db)):
+    try:
+        results = db.query(Creator).filter(Creator.id > 100)
+
+        channel_ids = []
+        for creator in results:
+            channel_ids.append(creator.channel_id)
+
+        
+        db.query(Video).filter(Video.channel_id in channel_ids).delete(synchronize_session='evaluate')
+        db.commit()
+        return {"success":"deleted videos","channels":channel_ids}
+    except Exception as e:
+        return {"failure":str(e)}
+
+
 @app.get("/deleteCreatorsVideos")
 def del_videos(channel_id: str, db: Session = Depends(get_db)):
     try:
