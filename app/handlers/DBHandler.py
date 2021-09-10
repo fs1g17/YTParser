@@ -136,7 +136,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
 
         if verify_channel_with_youtube(channel_id=channel_id,youtube=youtube) < 1:
             curr_msg = "DBHandler: Failed to cache, may not exist in YouTube"
-            add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
+            add_failed(curr_msg,channel_name,channel_id)
             continue 
 
         try:
@@ -145,7 +145,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
             add_general(msg="got videos by date change for %s : %s"%(channel_name,channel_id))
         except Exception as e3:
             curr_msg = "DBHandler: Failed to get videos " + str(e3)
-            add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
+            add_failed(curr_msg,channel_name,channel_id)
             continue 
 
         for video in videos:
@@ -157,7 +157,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
 
             if db.query(Video.video_id).filter_by(video_id=video_id).first() is not None:
                 curr_msg = "DBHandler: Skipping as creator has already been cached"
-                add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
+                add_failed(curr_msg,channel_name,channel_id)
                 continue  
 
             try:
@@ -170,10 +170,10 @@ def cache_range(start: int, size: int, db: Session) -> dict:
                 )
 
                 db.add(to_add)
-                add_completed(msg="Added video",channel_name=channel_name,channel_id=channel_id,video_id=video_id)
+                add_completed("Added video",channel_name,channel_id,video_id)
             except Exception as e4:
                 curr_msg = "DBHandler: Failed to add video " + str(e4)
-                add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
+                add_failed(curr_msg,channel_name,channel_id,video_id)
         try:
             db.commit()
             add_general(msg="commited changes to database!")
