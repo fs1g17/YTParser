@@ -49,6 +49,19 @@ async def home(request: Request):
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
+@app.get("/deleteChannel")
+def del_ruler(channel_id: str, db: Session = Depends(get_db)):
+    try:
+        db.query(Creator).filter(Creator.channel_id == channel_id).delete(synchronize_session='evaluate')
+        db.query(Video).filter(Video.channel_id == channel_id).delete(synchronize_session='evaluate')
+
+        db.query(Creator).filter(Creator.id > 120).update({"id": (Creator.id -1)})
+        db.commit()
+
+        return {"success":True}
+    except Exception as e:
+        return {"failure":str(e)}
+
 @app.get("/sqlQuery")
 def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
     try:
