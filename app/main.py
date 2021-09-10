@@ -56,7 +56,7 @@ def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
             db.execute(query)
             if commit:
                 db.commit 
-            return {"success!":True}
+            return {"success!":True,"commit":commit}
 
         results = db.execute(query)
         rows = []
