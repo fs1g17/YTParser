@@ -212,7 +212,6 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
     videos = playlist['items']
     
     curr_date = parse_date(get_date(videos[0]))
-    #curr_date = datetime.now()
     all_videos = []
     while(curr_date >= end_date):
         for video in videos:
