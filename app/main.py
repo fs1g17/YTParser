@@ -1,3 +1,4 @@
+from app.handlers.DBHandler import get_channel_names_ids
 from webbrowser import get
 from fastapi import FastAPI, Request, Depends, WebSocket, File
 from fastapi.datastructures import UploadFile
@@ -141,5 +142,38 @@ def get_date_ranges(db: Session = Depends(get_db)):
                 date_range['end'] = video_date
         
         return {"success":date_ranges}
+    except Exception as e:
+        return {"failure":str(e)}
+
+@app.get("/num_vids")
+def get_info(db: Session = Depends(get_db)):
+    try:
+        channel_names_ids = get_channel_names_ids(db=db)
+        all_vids = db.query(Video).order_by(desc(Video.date)).all()
+        date_ranges = {}
+        num_vids = {}
+
+        for video in all_vids:
+            channel_id = video.channel_id
+            channel = channel_names_ids[channel_id]
+            video_date = video.date
+            
+            if not(channel in date_ranges):
+                date_ranges[channel] = {"start":video_date,"end":video_date}
+            else:
+                date_range = date_ranges[channel]
+                start = date_range['start']
+                end = date_range['end']
+
+                if video_date < start:
+                    date_range['start'] = video_date 
+                elif video_date > end:
+                    date_range['end'] = video_date
+
+            if not(channel in num_vids):
+                num_vids[channel] = 1
+            else:
+                num_vids[channel] += 1
+        return {"date_range":date_ranges,"num_vids":num_vids}
     except Exception as e:
         return {"failure":str(e)}
