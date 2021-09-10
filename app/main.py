@@ -162,6 +162,24 @@ async def show_all_creators(db: Session = Depends(get_db)):
 # def cache_creator(channel_id: str, db: Session = Depends(get_db))
 #     try:
 
+@app.get("/getUniqueCreatorsVideos")
+def get_uniq_creators_vids(db: Session = Depends(get_db)):
+    try:
+        results = db.execute("SELECT DISTINCT channel_id FROM videos;")
+        ch_ids = []
+        for row in results:
+            ch_ids.append(row[0])
+
+        name = []
+        for channel_id in ch_ids:
+            result = db.query(Creator).filter(Creator.channel_id == channel_id)
+            for row in result:
+                name.append(row)
+
+        return {"success!":name}
+    except Exception as e:
+        return {"failed":str(e)}
+
 
 @app.get("/cacheRange")
 def cache_test(start: int, size: int, db: Session = Depends(get_db)):
