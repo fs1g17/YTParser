@@ -107,6 +107,8 @@ def cache_range(start: int, size: int, db: Session) -> dict:
             info['channel_name'] = channel_name
         if not(video_id == None):
             info['video_id'] = video_id
+
+        print(info)
         msg_list.append(info)
 
     if not(is_auth()):
