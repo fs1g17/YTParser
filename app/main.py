@@ -54,9 +54,10 @@ def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
     try:
         if 'delete' in query.lower():
             db.execute(query)
-            db.commit 
+            if commit:
+                db.commit 
             return {"success!":True}
-            
+
         results = db.execute(query)
         rows = []
         for row in results:
