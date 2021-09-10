@@ -113,4 +113,33 @@ def show_videos(start:int = 1, limit: int = 230, db: Session = Depends(get_db)):
         
         return {"success":rows}
     except Exception as e:
-        return {"failure":str(e)}   
+        return {"failure":str(e)}  
+
+@app.get("/getDateRanges")
+def get_date_ranges(db: Session = Depends(get_db)):
+    try:
+        all_vids = db.query(Video).order_by(desc(Video.date)).all()
+        date_ranges = {}
+
+        for video in all_vids:
+            channel = video.channel_id
+            video_date = video.date
+            
+            if not(channel in date_ranges):
+                date_ranges[channel] = {"start":video_date,"end":video_date}
+                continue 
+
+            date_range = date_ranges[channel]
+            start = date_range['start']
+            end = date_range['end']
+
+            if video_date < start:
+                date_range['start'] = video_date 
+                continue 
+
+            if video_date > end:
+                date_range['end'] = video_date
+        
+        return {"success":date_ranges}
+    except Exception as e:
+        return {"failure":str(e)}
