@@ -146,10 +146,12 @@ def cache_range(start: int, size: int, db: Session) -> dict:
             messages.add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
             continue 
 
+        messages.add_general(msg="YouTube channel exists! %s"%channel_id)
+
         try:
             now = datetime.now()
             videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=-1,month=0,day=0)
-            messages.add_general(msg="got videos by date change for %s : %s"%(channel_name,channel_id))
+            messages.add_general(msg="got %s videos by date change for %s : %s"%(str(len(videos)),channel_name,channel_id))
         except Exception as e3:
             curr_msg = "DBHandler: Failed to get videos " + str(e3)
             messages.add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
