@@ -56,7 +56,7 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    var ws = new WebSocket("ws://localhost:80/latestLinks/ws");
+    var ws = new WebSocket("ws://ytparser.uksouth.cloudapp.azure.com:80/latestLinks/ws");
     var table_body = document.getElementById("tablecontents");
     var spinner = document.getElementById("spinner"); 
     var download_button = document.getElementById("download_button");

@@ -84,7 +84,7 @@
 {% block scripts %}
 {{ super() }}
 <script charset="utf-8">
-    var ws = new WebSocket("ws://localhost:80/keywords/ws");
+    var ws = new WebSocket("ws://ytparser.uksouth.cloudapp.azure.com:80/keywords/ws");
     var spinner = document.getElementById("spinner"); 
     var table_body = document.getElementById("tablecontents");
     var keyword_list = document.getElementById("keywords_list");
