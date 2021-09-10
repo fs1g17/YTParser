@@ -112,22 +112,22 @@ def cache_range(start: int, size: int, db: Session) -> dict:
         msg_list.append(info)
 
     if not(is_auth()):
-        add_general(msg="User isn't authenticated")
-        add_general(msg="Authenticate first!")
+        add_general("User isn't authenticated")
+        add_general("Authenticate first!")
         return messages
 
     try:
         creators = get_creators_range(start=start,size=size,db=db)
-        add_general(msg="Got creators")
+        add_general("Got creators")
     except Exception as e1:
-        add_general(msg="Failed: failure to get creators! " + str(e1))
+        add_general("Failed: failure to get creators! " + str(e1))
         return messages
 
     try:
         youtube = get_auth_service()
-        add_general(msg="Got youtube service")
+        add_general("Got youtube service")
     except Exception as e2:
-        add_general(msg="DBHandler: Failed to get youtube service " + str(e2))
+        add_general("DBHandler: Failed to get youtube service " + str(e2))
         return messages
     
     for creator in creators:
@@ -142,7 +142,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
         try:
             now = datetime.now()
             videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=-1,month=0,day=0)
-            add_general(msg="got videos by date change for %s : %s"%(channel_name,channel_id))
+            add_general("got videos by date change for %s : %s"%(channel_name,channel_id))
         except Exception as e3:
             curr_msg = "DBHandler: Failed to get videos " + str(e3)
             add_failed(curr_msg,channel_name,channel_id)
@@ -176,10 +176,10 @@ def cache_range(start: int, size: int, db: Session) -> dict:
                 add_failed(curr_msg,channel_name,channel_id,video_id)
         try:
             db.commit()
-            add_general(msg="commited changes to database!")
+            add_general("commited changes to database!")
         except Exception as e5:
             curr_msg = "DBHandler: Failed to commit to db " + str(e5)
-            add_general(msg=curr_msg)
+            add_general(curr_msg)
     return messages
 
     # TODO: update cache function!
