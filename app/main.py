@@ -185,10 +185,9 @@ def get_uniq_creators_vids(db: Session = Depends(get_db)):
 def cache_test(start: int, size: int, db: Session = Depends(get_db)):
     try:
         messages = cache_range(start=start,size=size,db=db)
-        db.commit()
-        return {"success!":str(messages['general']),"failed":str(messages['failed']),"completed":str(messages['completed'])}
-    except Exception as e:
-        return {"failure in main":str(e)}
+        return {"success!":messages}
+    except Exception as main_exception:
+        return {"failure in main":str(main_exception)}
 
 #TODO: it looks like the app is skipping click on car "62" completely!
 @app.get("/checkRange")

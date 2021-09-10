@@ -76,28 +76,51 @@ def clean_input(input: str) -> str:
 def remove_creator_videos(channel_id: str, db: Session):
     db.execute("DELETE FROM videos WHERE channel_id='%s';"%channel_id)
 
-def cache_range(start: int, size: int, db: Session):
-
+def cache_range(start: int, size: int, db: Session) -> dict:
     messages = {}
-
     completed = []
     failed = []
     general = []
 
+    # Completed - for storing completed rounds in for loops (for finer grain)
     messages['completed'] = completed 
+    # Failed - for storing failed rounds in for loops (for finer grain)
     messages['failed'] = failed 
+    # General - for storing state, getting services, connecting, etc
     messages['general'] = general
+
+    def add_general(msg: str):
+        add_info(msg_list=general,msg=msg)
+
+    def add_failed(msg: str, channel_name: str, channel_id: str, video_id: str = None):
+        add_info(msg_list=failed,msg=msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
+
+    def add_completed(msg: str, channel_name: str, channel_id: str, video_id: str = None):
+        add_info(msg_list=completed,msg=msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
+
+    def add_info(msg_list: list, msg: str, channel_name: str = None, channel_id: str = None, video_id: str = None):
+        info = {}    
+        info['message'] = msg
+        if not('channel_id' == None):
+            info['channel_id'] = channel_id
+        if not('channel_id' == None):
+            info['channel_name'] = channel_name
+        if not(video_id == None):
+            info['video_id'] = video_id
+        msg_list.append(info)
+
     try:
         creators = get_creators_range(start=start,size=size,db=db)
-        general.append("got creators")
+        add_general(msg="Got creators")
     except Exception as e1:
-        failed.append("DBHandler: Failed getting creators: " + str(e1))
+        add_general(msg="Failed: failure to get creators! " + str(e1))
         return messages
+
     try:
         youtube = get_auth_service()
-        completed.append("got youtube service")
+        add_general(msg="Got youtube service")
     except Exception as e2:
-        failed.append("DBHandler: Failed to get youtube service " + str(e2))
+        add_general(msg="DBHandler: Failed to get youtube service " + str(e2))
         return messages
     
     for creator in creators:
@@ -105,15 +128,17 @@ def cache_range(start: int, size: int, db: Session):
         channel_id = creator.channel_id
 
         if verify_channel_with_youtube(channel_id=channel_id,youtube=youtube) < 1:
-            failed.append("DBHandler: Failed to cache: " + channel_name)
+            curr_msg = "DBHandler: Failed to cache, may not exist in YouTube"
+            add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
             continue 
 
         try:
             now = datetime.now()
             videos = get_videos_by_date_change(channel_id=channel_id,youtube=youtube,start_date=now,year=-1,month=0,day=0)
+            add_general(msg="got videos by date change for %s : %s"%(channel_name,channel_id))
         except Exception as e3:
-            failure = {'channel_id':channel_id,"exception":str(e3)}
-            failed.append("DBHandler: Failed " + str(failure))
+            curr_msg = "DBHandler: Failed to get videos " + str(e3)
+            add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
             continue 
 
         for video in videos:
@@ -124,8 +149,8 @@ def cache_range(start: int, size: int, db: Session):
             video_desc = clean_input(video_desc)
 
             if db.query(Video.video_id).filter_by(video_id=video_id).first() is not None:
-                failure = {'channel_id':channel_id,'video_id':video_id,"exception":"VIDEOS already CACHED"}
-                failed.append("DBHandler: Skipping video as it's already cached " + str(failure))
+                curr_msg = "DBHandler: Skipping as creator has already been cached"
+                add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id)
                 continue  
 
             try:
@@ -138,15 +163,16 @@ def cache_range(start: int, size: int, db: Session):
                 )
 
                 db.add(to_add)
+                add_completed(msg="Added video",channel_name=channel_name,channel_id=channel_id,video_id=video_id)
             except Exception as e4:
-                failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e4)}
-                failed.append("DBHandler: Failed to add video. " + str(failure))
+                curr_msg = "DBHandler: Failed to add video " + str(e4)
+                add_failed(msg=curr_msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
         try:
             db.commit()
-            completed.append("completed caching for: " + str(channel_name))
+            add_general(msg="commited changes to database!")
         except Exception as e5:
-            failure = {'channel_name':channel_name,'channel_id':channel_id,'exception':str(e5)}
-            failed.append("DBHandler: Failed to commit videos to db: " + str(failed))
+            curr_msg = "DBHandler: Failed to commit to db " + str(e5)
+            add_general(msg=curr_msg)
     return messages
 
     # TODO: update cache function!
