@@ -109,6 +109,11 @@ def cache_range(start: int, size: int, db: Session) -> dict:
             info['video_id'] = video_id
         msg_list.append(info)
 
+    if not(is_auth()):
+        add_general(msg="User isn't authenticated")
+        add_general(msg="Authenticate first!")
+        return messages
+
     try:
         creators = get_creators_range(start=start,size=size,db=db)
         add_general(msg="Got creators")
