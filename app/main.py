@@ -49,119 +49,6 @@ async def home(request: Request):
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
 
-@app.get("/deleteChannel")
-def del_ruler(channel_id: str, db: Session = Depends(get_db)):
-    try:
-        db.query(Creator).filter(Creator.channel_id == channel_id).delete(synchronize_session='evaluate')
-        print("Deleted %s from creators"%channel_id)
-        db.query(Video).filter(Video.channel_id == channel_id).delete(synchronize_session='evaluate')
-        print("Deleted %s from videos"%channel_id)
-        db.query(Creator).filter(Creator.id > 120).update({"id": (Creator.id -1)})
-        print("updated all creators after %s"%channel_id)
-        db.commit()
-        print("commited database")
-
-        return {"success":True}
-    except Exception as e:
-        print("EXCEPTION: ", e)
-        return {"failure":str(e)}
-
-@app.get("/sqlQuery")
-def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
-    try:
-        if 'delete' in query.lower():
-            db.execute(query)
-            if commit:
-                db.commit 
-            return {"success!":True,"commit":commit}
-
-        results = db.execute(query)
-        rows = []
-        for row in results:
-            rows.append(row)
-        
-        if commit:
-            db.commit()
-        return {"success":rows}
-    except Exception as e:
-        return {"failed":str(e)}
-
-
-
-@app.get("/showTable")
-def show_table_limit(limit: int = 10, table: str = 'videos', db: Session = Depends(get_db)):
-    try:
-        if table.lower() == 'videos':
-            results = db.query(Video).limit(limit).all()
-        elif table.lower() == 'creators':
-            results = db.query(Creator).limit(limit).all()
-        else:
-            return {"Failure":"No such table %s"%table}
-        
-        rows = []
-        for row in results:
-            rows.append(row)
-        return {"success":rows}
-    except Exception as e:
-        return {"failure":str(e)}
-
-@app.post("/uploadCreatorList")
-async def get_creators_list(db: Session = Depends(get_db), file: UploadFile = File(...)):
-    try:
-
-        with file.file as tempfile:
-            with tempfile._file as csvfile:
-                f = TextIOWrapper(csvfile, encoding='utf-8')
-                reader = csv.reader(f)
-
-                num = 1
-                for row in reader:
-                    channel_name = row[0]
-                    channel_id = row[2]
-                    to_add = Creator(
-                        id=num,
-                        channel_name=channel_name,
-                        channel_id=channel_id
-                    )
-                    db.add(to_add)
-                    num += 1
-                db.commit()
-        return {"success!":"added all creators to db"}
-    except Exception as e:
-        return {"failure":"error: %s"%str(e)}
-
-@app.get("/showAllCreators")
-async def show_all_creators(db: Session = Depends(get_db)):
-    try:
-        results = db.query(Creator).all()
-        youtubers = []
-        
-        for ytb in results:
-            youtubers.append([ytb[0],ytb[1],ytb[2]])
-        return {"success!":youtubers}
-    except Exception as e:
-        return {"failure":str(e)}
-
-# @app.get("/updateDB")
-# def update(db: Session = Depends(get_db)):
-#     try:
-#         messages,completed,failed = update_db(db=db)
-#         return {"messages":messages,"completed":completed,"failed":failed}
-#     except Exception as e:
-#         return {"failed in MAIN":str(e)}
-
-# @app.get("/updateCreator")
-# def update_creator(channel_id: str, db: Session = Depends(get_db)):
-#     try:
-#         messages = update_db_channel(channel_id=channel_id,db=db)
-#         return {"success":messages}
-#     except Exception as e:
-#         return {"failure in MAIN":str(e)}
-
-# @app.get("/cacheCreator")
-# def cache_creator(channel_id: str, db: Session = Depends(get_db))
-#     try:
-
 @app.get("/getUniqueCreatorsVideos")
 def get_uniq_creators_vids(db: Session = Depends(get_db)):
     try:
@@ -179,7 +66,6 @@ def get_uniq_creators_vids(db: Session = Depends(get_db)):
         return {"success!":name}
     except Exception as e:
         return {"failed":str(e)}
-
 
 @app.get("/cacheRange")
 def cache_test(start: int, size: int, db: Session = Depends(get_db)):
@@ -203,161 +89,28 @@ def cache_check(start: int, size: int, db: Session = Depends(get_db)):
     except Exception as e:
         return {"Main: failed ":str(e)}
 
-@app.get("/deleteVideosRange")
-def del_range(db: Session = Depends(get_db)):
+@app.get("/showCreators")
+def show_creators(start:int = 1, limit: int = 230, db: Session = Depends(get_db)):
     try:
-        results = db.query(Creator).filter(Creator.id > 100)
-
-        channel_ids = []
-        for creator in results:
-            channel_ids.append(creator.channel_id)
-
-        
-        db.query(Video).filter(Video.channel_id in channel_ids).delete(synchronize_session='evaluate')
-        db.commit()
-        return {"success":"deleted videos","channels":channel_ids}
-    except Exception as e:
-        return {"failure":str(e)}
-
-
-@app.get("/deleteCreatorsVideos")
-def del_videos(channel_id: str, db: Session = Depends(get_db)):
-    try:
-        remove_creator_videos(channel_id=channel_id,db=db)
-        db.commit()
-        return {"success":"whoop whoop"}
-    except Exception as e:
-        return {"failure":":P"}
-
-# @app.get("/topCreator")
-# def get_top(limit: int, db: Session = Depends(get_db)):
-#     try:
-#         rows = [] 
-#         results = db.query(Creator).filter(text("id<%s"%limit))
-
-#         for row in results:
-#             rows.append(row)
-#         return {"rows":rows}
-#     except Exception as e:
-#         return {"error":str(e)}
-
-# @app.get("/topVideos")
-# def get_top_vids(limit: int, db: Session = Depends(get_db)):
-#     try:
-#         rows = [] 
-#         results = db.query(Video).limit(limit).all()
-
-#         for row in results:
-#             rows.append(row)
-#         return {"rows":rows}
-#     except Exception as e:
-#         return {"error":str(e)}
-
-# @app.get("/getSlice")
-# def get_slice(start: int, size: int, db: Session = Depends(get_db)):
-#     try:
-#         rows = []
-#         results = db.query(Creator).filter(text("id >= %s AND id < %s"%(start,start+size)))
-#         for row in results:
-#             rows.append(row)
-#         return {"rows":rows}
-#     except Exception as e:
-#         return {"error":str(e)}
-
-# @app.get("/getCreatorsVideos")
-# def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
-#     try:
-#         creator = db.query(Creator).filter(Creator.id == channel_index).first()
-#         channel_id = creator.channel_id
-#     except Exception as e:
-#         return {"Failed": str(e)}
-
-#     try:
-#         rows = [] 
-#         results = db.query(Video).filter(Video.channel_id==channel_id).order_by(desc(Video.date)).all()
-#         for video in results:
-#             rows.append((video.date,video.video_id))
-#         return {"success!":str(rows)}
-#     except Exception as e:
-#         return {"Fail":str(e)}
-
-
-
-# @app.get("/getCreatorsVideos")
-# def get_creators_videos(channel_index: int, db: Session = Depends(get_db)):
-#     try:
-#         creator = db.query(Creator).filter(Creator.id == channel_index).first()
-#         channel_id = creator.channel_id
-#     except Exception as e:
-#         return {"Failed": str(e)}
-
-#     try:
-#         rows = [] 
-#         results = db.execute("SELECT * FROM videos WHERE channel_id='%s';"%channel_id)
-#         for row in results:
-#             rows.append(row)
-#         return {"success!":str(rows)}
-#     except Exception as e:
-#         return {"Fail":str(e)}
-
-@app.get("/TEST")
-def test(start: int, size: int, db: Session = Depends(get_db)):
-    try:
-        creators = db.query(Creator).offset(start).limit(size).all()
+        results = db.query(Creator).offset(start).limit(limit).all()
         rows = []
-        for creator in creators:
-            rows.append([creator.channel_name,creator.channel_id])
-        return {"sucess":creators}
+
+        for creator in results:
+            rows.append([creator.id,creator.channel_name,creator.channel_id])
+        
+        return {"success":rows}
     except Exception as e:
         return {"failure":str(e)}
 
-@app.get("/searchKeywords")
-async def search(db: Session = Depends(get_db)):
+@app.get("/showVideos")
+def show_videos(start:int = 1, limit: int = 230, db: Session = Depends(get_db)):
     try:
-        # do the keyword search here!
-        loop = asyncio.get_event_loop()
-        video_keywords = await loop.run_in_executor(None, search_keywords, keywords, db)
-        output = [(video.video_id,sponsors)for video,sponsors in video_keywords]
-        return {"success!":str(output)}
-    except Exception as e:
-        return {"failure!":str(e)}
+        results = db.query(Video).order_by(desc(Video.date)).offset(start).limit(limit).all()
+        rows = []
+
+        for video in results:
+            rows.append([video.date,video.channel_id])
         
-
-
-
-keywords = ["bridgestone",
-            "michelin",
-            "continental",
-            "nokian",
-            "kumho",
-            "goodyear",
-            "hankook",
-            "pirelli",
-            "yokohama",
-            "dunlop",
-            "marshal crugen",
-            "tigar",
-            "formula",
-            "viatti",
-            "kormoran",
-            "semperit",
-            "toyo",
-            "tunga",
-            "matador",
-            "nexen",
-            "cordiant",
-            "nitto",
-            "msxxis",
-            "laufen",
-            "debica",
-            "kama",
-            "nankang",
-            "tristar",
-            "cst",
-            "contyre",
-            "roadstone",
-            "cooper",
-            "bfgoodrich",
-            "general tire",
-            "gislaved",
-            "triangle"]
+        return {"success":rows}
+    except Exception as e:
+        return {"failure":str(e)}   
