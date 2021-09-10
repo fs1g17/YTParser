@@ -90,7 +90,7 @@ def cache_range(start: int, size: int, db: Session) -> dict:
     messages['general'] = general
 
     def add_general(msg: str):
-        add_info(msg_list=general,msg=msg)
+        add_info(general,msg)
 
     def add_failed(msg: str, channel_name: str, channel_id: str, video_id: str = None):
         add_info(msg_list=failed,msg=msg,channel_name=channel_name,channel_id=channel_id,video_id=video_id)
@@ -130,9 +130,12 @@ def cache_range(start: int, size: int, db: Session) -> dict:
         add_general("DBHandler: Failed to get youtube service " + str(e2))
         return messages
     
+
     for creator in creators:
+        
         channel_name = creator.channel_name
         channel_id = creator.channel_id
+        add_general("Inside creators loop %s : %s"%(channel_name,channel_id))
 
         if verify_channel_with_youtube(channel_id=channel_id,youtube=youtube) < 1:
             curr_msg = "DBHandler: Failed to cache, may not exist in YouTube"
