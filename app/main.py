@@ -52,6 +52,11 @@ app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keyword
 @app.get("/sqlQuery")
 def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
     try:
+        if 'delete' in query.lower():
+            db.execute(query)
+            db.commit 
+            return {"success!":True}
+            
         results = db.execute(query)
         rows = []
         for row in results:
@@ -62,6 +67,8 @@ def exec_query(query: str, commit: bool = False, db: Session = Depends(get_db)):
         return {"success":rows}
     except Exception as e:
         return {"failed":str(e)}
+
+
 
 @app.get("/showTable")
 def show_table_limit(limit: int = 10, table: str = 'videos', db: Session = Depends(get_db)):
@@ -147,6 +154,7 @@ def cache_test(start: int, size: int, db: Session = Depends(get_db)):
     except Exception as e:
         return {"failure in main":str(e)}
 
+#TODO: it looks like the app is skipping click on car "62" completely!
 @app.get("/checkRange")
 def cache_check(start: int, size: int, db: Session = Depends(get_db)):
     try:
