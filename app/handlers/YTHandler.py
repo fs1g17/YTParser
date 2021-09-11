@@ -211,10 +211,10 @@ def get_videos_by_date_change(channel_id: str, youtube:googleapiclient.discovery
         next_page_token = playlist['nextPageToken']
     videos = playlist['items']
     
-    #curr_date = parse_date(get_date(videos[0]))
-    date_format_string = '%Y-%m-%dT%H:%M:%SZ'
-    curr_date_string = datetime.now().strftime(date_format_string)
-    curr_date = datetime.strptime(curr_date_string,date_format_string)
+    curr_date = parse_date(get_date(videos[0]))
+    # date_format_string = '%Y-%m-%dT%H:%M:%SZ'
+    # curr_date_string = datetime.now().strftime(date_format_string)
+    # curr_date = datetime.strptime(curr_date_string,date_format_string)
     all_videos = []
     
     while(curr_date >= end_date):
