@@ -48,6 +48,10 @@ def update_creator(channel_id: str, db: Session = Depends(get_db)):
     except Exception as e:
         return {"failure":str(e)}
 
+@app.get("/nothing")
+def nothing():
+    return {"nothing":True}
+
 @app.get("/getUniqueCreatorsVideos")
 def get_uniq_creators_vids(db: Session = Depends(get_db)):
     try:
