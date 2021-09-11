@@ -10,8 +10,8 @@ router = APIRouter()
 
 @router.get("/authorise", response_class=HTMLResponse)
 async def auth_start(request: Request):
-    if os.path.exists("CREDENTIALS_PICKLE_FILE"):
-        return templates.TemplateResponse("blank.html", {"request":request,"heading":"Authentication Complete","message":"You are already authenticated!"})
+    # if os.path.exists("CREDENTIALS_PICKLE_FILE"):
+    #     return templates.TemplateResponse("blank.html", {"request":request,"heading":"Authentication Complete","message":"You are already authenticated!"})
     
     # link,_ = get_auth_service_link()
     # link = link[0]
