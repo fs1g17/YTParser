@@ -222,31 +222,43 @@ def get_latest_video_db(db:Session, channel_id: str) -> Video:
     result = db.query(Video).filter(Video.channel_id==channel_id).order_by(desc(Video.date)).first()
     return result
 
-def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.discovery.Resource):
-    messages = []
+def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.discovery.Resource) -> dict:
+    messages = Messages()
+
+    try:
+        curr_creator = db.query(Creator).filter(Creator.channel_id == channel_id).first()
+        curr_channel_name = curr_creator.channel_name
+    except Exception as e0:
+        messages.add_general("Creator with this channel_id doesn't appear to exist!: " + str(e0))
+        return messages.get_messages()
+    
 
     try:
         latest_video = get_latest_video_db(db=db,channel_id=channel_id)
         latest_video_id = latest_video.video_id
         latest_video_datetime = datetime.combine(latest_video.date, datetime.min.time())
-        messages.append("got latest video from db!")
-    except Exception as e:
-        messages.append("failed: " + str(e))
-        return messages
+
+        messages.add_general("got latest video from db!")
+    except Exception as e1:
+        curr_msg = "failed to get latest videos from db: " + str(e1)
+        messages.add_failed(msg=curr_msg,channel_name=curr_channel_name,channel_id=channel_id)
+        return messages.get_messages()
 
     try:
         new_videos = get_new_uploads(channel_id=channel_id,
                                      youtube=youtube,
                                      db_last_video_date=latest_video_datetime,
                                      db_last_video_id=latest_video_id)
-        messages.append("got latest videos!")
-    except Exception as e:
-        messages.append("failed to get latest videos: " + str(e))
-        return messages
+
+        messages.add_general("got latest videos!")
+    except Exception as e2:
+        curr_msg = "failed to get latest videos from youtube: " + str(e2)
+        messages.add_failed(msg=curr_msg,channel_name=curr_channel_name,channel_id=channel_id)
+        return messages.get_messages()
 
     if len(new_videos) == 0: 
-        messages = ["is already up to date!"] + messages
-        return messages
+        messages.add_completed(msg="is already up to date!",channel_name=curr_channel_name,channel_id=channel_id)
+        return messages.get_messages()
 
     for video in new_videos:
         video_id = get_video_id(video)
@@ -256,8 +268,7 @@ def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.dis
         video_desc = clean_input(video_desc)
 
         if db.query(Video.video_id).filter_by(video_id=video_id).first() is not None:
-            failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
-            messages.append("DBHandler: Skipping video as it's already cached " + str(failure))
+            messages.add_failed(msg="DBHandler: Skipping video as it's already cached",channel_name=curr_channel_name,channel_id=channel_id,video_id=video_id)
             continue  
 
         try:
@@ -270,12 +281,68 @@ def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.dis
             )
 
             db.add(to_add)
-        except Exception as e:
-            failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
-            messages.append("DBHandler: Failed to add video. " + str(failure))
+            messages.add_completed(msg="Added video",channel_name=curr_channel_name,channel_id=channel_id,video_id=video_id)
+        except Exception as e3:
+            messages.add_failed(msg="Failed to add video",channel_name=curr_channel_name,channel_id=channel_id,video_id=video_id)
     db.commit()
-    messages.append("completed updating for: " + str(channel_id))
-    return messages
+    messages.add_completed(msg="Completed",channel_name=curr_channel_name,channel_id=channel_id)
+    return messages.get_messages()
+
+#-------------------------- ORIGINAL --------------------------------------------------------------
+# def update_db_channel(db: Session, channel_id: str, youtube: googleapiclient.discovery.Resource):
+#     messages = []
+
+#     try:
+#         latest_video = get_latest_video_db(db=db,channel_id=channel_id)
+#         latest_video_id = latest_video.video_id
+#         latest_video_datetime = datetime.combine(latest_video.date, datetime.min.time())
+#         messages.append("got latest video from db!")
+#     except Exception as e:
+#         messages.append("failed: " + str(e))
+#         return messages
+
+#     try:
+#         new_videos = get_new_uploads(channel_id=channel_id,
+#                                      youtube=youtube,
+#                                      db_last_video_date=latest_video_datetime,
+#                                      db_last_video_id=latest_video_id)
+#         messages.append("got latest videos!")
+#     except Exception as e:
+#         messages.append("failed to get latest videos: " + str(e))
+#         return messages
+
+#     if len(new_videos) == 0: 
+#         messages = ["is already up to date!"] + messages
+#         return messages
+
+#     for video in new_videos:
+#         video_id = get_video_id(video)
+#         video_date = get_datetime(video)
+#         video_view = get_views(video,youtube)
+#         video_desc = get_description(video)
+#         video_desc = clean_input(video_desc)
+
+#         if db.query(Video.video_id).filter_by(video_id=video_id).first() is not None:
+#             failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
+#             messages.append("DBHandler: Skipping video as it's already cached " + str(failure))
+#             continue  
+
+#         try:
+#             to_add = Video(
+#                 channel_id=channel_id,
+#                 video_id=video_id,
+#                 date=video_date,
+#                 views=int(video_view),
+#                 description=video_desc
+#             )
+
+#             db.add(to_add)
+#         except Exception as e:
+#             failure = {'channel_id':channel_id,'video_id':video_id,'exception':str(e)}
+#             messages.append("DBHandler: Failed to add video. " + str(failure))
+#     db.commit()
+#     messages.append("completed updating for: " + str(channel_id))
+#     return messages
 
 #------------ MOVED TO keyword_search.py in /app/routers/ so that live updates could be reflected on the page! ------------------
 # def update_db(db: Session):

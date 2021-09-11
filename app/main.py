@@ -1,3 +1,5 @@
+from app.handlers.authentication import get_auth_service
+from app.handlers.DBHandler import update_db_channel
 from routers import auth 
 from routers import latest_links
 from routers import keyword_search
@@ -37,6 +39,15 @@ async def home(request: Request):
 
 app.add_api_websocket_route("/latestLinks/ws", latest_links.websocket_get_links)
 app.add_api_websocket_route("/keywords/ws", keyword_search.websocket_get_keywords)
+
+@app.get("/updateCreator")
+def update_creator(channel_id: str, db: Session = Depends(get_db)):
+    try:
+        youtube = get_auth_service()
+        messages = update_db_channel(db=db,channel_id=channel_id,youtube=youtube)
+        return {"success!":messages}
+    except Exception as e:
+        return {"failure":str(e)}
 
 @app.get("/getUniqueCreatorsVideos")
 def get_uniq_creators_vids(db: Session = Depends(get_db)):
