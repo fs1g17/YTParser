@@ -13,14 +13,18 @@ async def auth_start(request: Request):
     if os.path.exists("CREDENTIALS_PICKLE_FILE"):
         return templates.TemplateResponse("blank.html", {"request":request,"heading":"Authentication Complete","message":"You are already authenticated!"})
     
-    link,_ = get_auth_service_link()
+    # link,_ = get_auth_service_link()
+    # link = link[0]
+    
+    link,_ = auth_on_click()
     link = link[0]
+
     return templates.TemplateResponse("auth.html", {"request":request, "link":link})
 
 @router.get("/authorise/code", response_class=HTMLResponse)
 async def disp_auth_code(code: str, request: Request):
     try:
-        _,flow = get_auth_service_link()
+        _,flow = auth_on_click()
         auth = get_credentials(flow,code)
         with open("CREDENTIALS_PICKLE_FILE", 'wb') as f:
             pickle.dump(auth, f)

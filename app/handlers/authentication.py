@@ -35,6 +35,11 @@ def get_auth_service_link():
     url = flow.authorization_url()
     return url,flow 
 
+def auth_on_click():
+    flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(client_secrets_file, scopes, redirect_uri="http://ytparser.uksouth.cloudapp.azure.com/authorise/code")
+    url = flow.authorization_url()
+    return url,flow 
+
 def get_credentials(flow,code):
     flow.fetch_token(code=code)
     credentials = flow.credentials
