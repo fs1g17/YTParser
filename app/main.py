@@ -1,5 +1,3 @@
-from app.handlers.authentication import get_auth_service
-from app.handlers.DBHandler import update_db_channel
 from routers import auth 
 from routers import latest_links
 from routers import keyword_search
@@ -14,7 +12,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.expression import desc
 
 from db.database import get_db, Creator, Video
-from handlers.DBHandler import get_creators_range, cache_range, get_channel_names_ids
+from handlers.authentication import get_auth_service
+from handlers.DBHandler import get_creators_range, cache_range, get_channel_names_ids, update_db_channel
 
 # import alembic.config
 # alembicArgs = [
